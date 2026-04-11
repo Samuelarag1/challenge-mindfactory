@@ -20,17 +20,25 @@ export class CreateAutomotorDto {
     typeof value === 'string' ? normalizeText(value) : value,
   )
   @IsString()
-  @MinLength(2)
-  @MaxLength(60)
-  marca!: string;
+  @MinLength(3)
+  @MaxLength(30)
+  chasis!: string;
 
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? normalizeText(value) : value,
   )
   @IsString()
-  @MinLength(1)
-  @MaxLength(80)
-  modelo!: string;
+  @MinLength(3)
+  @MaxLength(30)
+  motor!: string;
+
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? normalizeText(value) : value,
+  )
+  @IsString()
+  @MinLength(2)
+  @MaxLength(40)
+  color!: string;
 
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? normalizeFechaFabricacion(value) : value,

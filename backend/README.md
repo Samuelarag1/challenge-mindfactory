@@ -1,7 +1,6 @@
 # Backend Challenge MindFactory
 
-
-## Tecnologias 
+## Tecnologias
 
 - `NestJS`
 - `TypeScript`
@@ -11,26 +10,57 @@
 - `class-transformer`
 - `Jest`
 - `Supertest`
-- `pg-mem`: base PostgreSQL en memoria para e2e rápidos y estables.
+- `pg-mem`
 - `ESLint` + `Prettier`
 - `Docker`
 
 ## Que hace el backend
 
-- Expone endpoints REST para alta, consulta, actualización, baja y listado de automotores.
-- Expone endpoints para alta y búsqueda de sujetos por CUIT.
+- Expone endpoints REST para alta, consulta, actualizacion, baja y listado de automotores.
+- Expone endpoints para alta y busqueda de sujetos por CUIT.
 - Normaliza inputs antes de persistir:
-  - dominio en mayúsculas
+  - dominio en mayusculas
   - CUIT sin guiones
   - textos con espacios internos colapsados
 - Valida reglas de negocio y formato:
   - dominio `AAA999` o `AA999AA`
-  - CUIT válido con dígito verificador
-  - fecha de fabricación `YYYYMM`, mes válido y no futura
-  - dominio único
+  - CUIT valido con digito verificador
+  - fecha de fabricacion `YYYYMM`, mes valido y no futura
+  - dominio unico
   - el titular de un automotor debe existir
 - Devuelve `422 Unprocessable Entity` con contrato consistente para validaciones y reglas de negocio.
-- Soporta búsqueda simple, paginación y ordenamiento en el listado de automotores.
+- Soporta busqueda simple, paginacion y ordenamiento en el listado de automotores.
+
+## Modelo funcional de automotor
+
+El recurso `automotor` queda alineado al challenge de frontend con este shape:
+
+```json
+{
+  "dominio": "AA123AA",
+  "chasis": "8AFZZZ54ZMJ123456",
+  "motor": "ABC123456",
+  "color": "Rojo",
+  "fechaFabricacion": "201806",
+  "titular": {
+    "cuit": "20123456786",
+    "nombre": "Juan Perez"
+  }
+}
+```
+
+Para creacion y actualizacion, el request usa `titularCuit`:
+
+```json
+{
+  "dominio": "AA123AA",
+  "chasis": "8AFZZZ54ZMJ123456",
+  "motor": "ABC123456",
+  "color": "Rojo",
+  "fechaFabricacion": "201806",
+  "titularCuit": "20123456786"
+}
+```
 
 ## Variables de entorno
 
@@ -38,15 +68,15 @@ Tomar como base [`.env.example`](./.env.example).
 
 - `PORT=3000`
 - `CORS_ORIGIN=http://localhost:4200`
-- `DB_HOST=localhost` 
-- `DB_PORT=5432` 
-- `DB_USERNAME=postgres` 
-- `DB_PASSWORD=postgres` 
-- `DB_NAME=challenge_mindfactory` 
-- `DB_SYNCHRONIZE=true` 
+- `DB_HOST=localhost`
+- `DB_PORT=5432`
+- `DB_USERNAME=postgres`
+- `DB_PASSWORD=postgres`
+- `DB_NAME=challenge_mindfactory`
+- `DB_SYNCHRONIZE=true`
 - `DB_SEED=false`
 
-## Uso 
+## Uso
 
 ### 1. Instalar dependencias
 
@@ -56,8 +86,8 @@ npm install
 
 ### 2. Configurar entorno
 
-- Copiá `.env.example` a `.env` si querés trabajar con archivo local.
-- Levantá PostgreSQL o usá Docker Compose desde la raíz del repo.
+- Copia `.env.example` a `.env` si quieres trabajar con archivo local.
+- Levanta PostgreSQL o usa Docker Compose desde la raiz del repo.
 
 ### 3. Levantar el backend
 
@@ -69,7 +99,7 @@ La API queda disponible en `http://localhost:3000/api`.
 
 ## Uso con Docker Compose
 
-Desde la raíz del repo:
+Desde la raiz del repo:
 
 ```bash
 docker compose up --build
@@ -85,7 +115,7 @@ Servicios:
 
 El seed es opt-in y solo corre si `DB_SEED=true`.
 
-Hace `upsert`, así que es idempotente y se puede ejecutar más de una vez sin duplicar datos.
+Hace `upsert`, asi que es idempotente y se puede ejecutar mas de una vez sin duplicar datos.
 
 Datos demo:
 
@@ -94,9 +124,9 @@ Datos demo:
   - `27234567891` / `Maria Gomez`
   - `30712345671` / `Transporte Delta SA`
 - Automotores:
-  - `AAA123`
-  - `AB123CD`
-  - `AC456EF`
+  - `AAA123` / `8AFZZZ54ZMJ000001` / `MTR000001` / `Blanco` / `201806` / titular `20123456786`
+  - `AB123CD` / `8AFZZZ54ZMJ000002` / `MTR000002` / `Negro` / `202112` / titular `27234567891`
+  - `AC456EF` / `8AFZZZ54ZMJ000003` / `MTR000003` / `Gris` / `202001` / titular `30712345671`
 
 ## Endpoints
 
@@ -124,7 +154,7 @@ Respuesta `201`:
 
 Errores comunes:
 
-- `422` si el CUIT es inválido
+- `422` si el CUIT es invalido
 - `422` si ya existe un sujeto con ese CUIT
 
 ### `GET /api/sujetos/by-cuit?cuit=20123456786`
@@ -146,7 +176,7 @@ Respuesta `200`:
 
 Errores comunes:
 
-- `422` si el CUIT es inválido
+- `422` si el CUIT es invalido
 - `404` si el sujeto no existe
 
 ### `POST /api/automotores`
@@ -158,8 +188,9 @@ Body esperado:
 ```json
 {
   "dominio": "AA123AA",
-  "marca": "Ford",
-  "modelo": "Fiesta",
+  "chasis": "8AFZZZ54ZMJ123456",
+  "motor": "ABC123456",
+  "color": "Rojo",
   "fechaFabricacion": "201806",
   "titularCuit": "20123456786"
 }
@@ -170,8 +201,9 @@ Respuesta `201`:
 ```json
 {
   "dominio": "AA123AA",
-  "marca": "Ford",
-  "modelo": "Fiesta",
+  "chasis": "8AFZZZ54ZMJ123456",
+  "motor": "ABC123456",
+  "color": "Rojo",
   "fechaFabricacion": "201806",
   "titular": {
     "cuit": "20123456786",
@@ -182,20 +214,20 @@ Respuesta `201`:
 
 Errores comunes:
 
-- `422` si el payload es inválido
+- `422` si el payload es invalido
 - `422` si el dominio ya existe
 - `422` si el titular no existe
 
 ### `GET /api/automotores`
 
-Lista automotores con búsqueda, paginación y ordenamiento.
+Lista automotores con busqueda, paginacion y ordenamiento.
 
 Query params soportados:
 
 - `page`: opcional, default `1`
-- `limit`: opcional, default `10`, máximo `50`
+- `limit`: opcional, default `10`, maximo `50`
 - `search`: opcional, busca por dominio o CUIT del titular
-- `sortBy`: opcional, uno de `dominio`, `marca`, `modelo`, `fechaFabricacion`, `titularCuit`
+- `sortBy`: opcional, uno de `dominio`, `chasis`, `color`, `fechaFabricacion`, `titularCuit`
 - `sortDirection`: opcional, `asc` o `desc`
 
 Ejemplo:
@@ -211,8 +243,9 @@ Respuesta `200`:
   "items": [
     {
       "dominio": "AB123CD",
-      "marca": "Toyota",
-      "modelo": "Corolla",
+      "chasis": "8AFZZZ54ZMJ000002",
+      "motor": "MTR000002",
+      "color": "Negro",
       "fechaFabricacion": "202112",
       "titular": {
         "cuit": "20123456786",
@@ -236,7 +269,7 @@ Respuesta `200`:
 
 Busca un automotor por dominio.
 
-Parámetro esperado:
+Parametro esperado:
 
 - `dominio`: obligatorio, acepta `AAA999` o `AA999AA`
 
@@ -245,8 +278,9 @@ Respuesta `200`:
 ```json
 {
   "dominio": "AA123AA",
-  "marca": "Ford",
-  "modelo": "Fiesta",
+  "chasis": "8AFZZZ54ZMJ123456",
+  "motor": "ABC123456",
+  "color": "Rojo",
   "fechaFabricacion": "201806",
   "titular": {
     "cuit": "20123456786",
@@ -257,7 +291,7 @@ Respuesta `200`:
 
 Errores comunes:
 
-- `422` si el dominio es inválido
+- `422` si el dominio es invalido
 - `404` si el automotor no existe
 
 ### `PUT /api/automotores/:dominio`
@@ -268,8 +302,9 @@ Body esperado:
 
 ```json
 {
-  "marca": "Toyota",
-  "modelo": "Etios",
+  "chasis": "8AFZZZ54ZMJ123456",
+  "motor": "XYZ987654",
+  "color": "Azul",
   "fechaFabricacion": "202001",
   "titularCuit": "27234567891"
 }
@@ -280,8 +315,9 @@ Respuesta `200`:
 ```json
 {
   "dominio": "AA123AA",
-  "marca": "Toyota",
-  "modelo": "Etios",
+  "chasis": "8AFZZZ54ZMJ123456",
+  "motor": "XYZ987654",
+  "color": "Azul",
   "fechaFabricacion": "202001",
   "titular": {
     "cuit": "27234567891",
@@ -292,7 +328,7 @@ Respuesta `200`:
 
 Errores comunes:
 
-- `422` si el payload es inválido
+- `422` si el payload es invalido
 - `422` si el nuevo titular no existe
 - `404` si el automotor no existe
 
@@ -304,7 +340,7 @@ Respuesta `204` sin body.
 
 Errores comunes:
 
-- `422` si el dominio es inválido
+- `422` si el dominio es invalido
 - `404` si el automotor no existe
 
 ## Contrato de errores
@@ -341,33 +377,35 @@ Ejemplo:
 }
 ```
 
-## Herramientas para verificar que el proyecto está bien
+## Compatibilidad y ruptura
+
+Este cambio rompe compatibilidad con el contrato anterior de `automotores` basado en `marca` y `modelo`.
+
+Cambios incompatibles:
+
+- `POST /api/automotores` ya no acepta `marca` ni `modelo`.
+- `PUT /api/automotores/:dominio` ya no acepta `marca` ni `modelo`.
+- `GET /api/automotores` y `GET /api/automotores/:dominio` ya no devuelven `marca` ni `modelo`.
+- `sortBy` ya no admite `marca` ni `modelo`.
+- La tabla `automotores` cambia su esquema para persistir `chasis`, `motor` y `color` en lugar de `marca` y `modelo`.
+
+Como el proyecto ya trabaja con `TypeORM` + `synchronize`, no se agrego una infraestructura nueva de migraciones para este ajuste. Si existe una base previa con el esquema viejo, conviene recrear el esquema o dejar que `synchronize` aplique el cambio en un entorno descartable. Para ambientes persistentes, el cambio debe tratarse como migracion de ruptura.
+
+## Herramientas para verificar el proyecto
 
 ### Lint
-
-Verifica tipado, seguridad básica y consistencia del código:
 
 ```bash
 npm run lint
 ```
 
-Si querés autocorregir lo posible:
-
-```bash
-npm run lint:fix
-```
-
 ### Unit tests
-
-Prueban utilidades puras y reglas de normalización/validación:
 
 ```bash
 npm run test
 ```
 
-### E2E / integración HTTP
-
-Prueban endpoints reales con Nest, TypeORM y una base PostgreSQL en memoria vía `pg-mem`:
+### E2E / integracion HTTP
 
 ```bash
 npm run test:e2e
@@ -375,15 +413,11 @@ npm run test:e2e
 
 ### Build
 
-Verifica compilación TypeScript/Nest:
-
 ```bash
 npm run build
 ```
 
-### Verificación completa
-
-Corre el check completo de calidad local:
+### Verificacion completa
 
 ```bash
 npm run verify

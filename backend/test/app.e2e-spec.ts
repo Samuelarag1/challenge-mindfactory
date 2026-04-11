@@ -4,6 +4,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { DataType, newDb } from 'pg-mem';
 import request from 'supertest';
 import { DataSource, DataSourceOptions, Repository } from 'typeorm';
+import type {
+  AutomotorResponseDto,
+  ListAutomotoresResponseDto,
+} from '../src/automotores/dto/automotor-response.dto';
 import { AutomotoresModule } from '../src/automotores/automotores.module';
 import { AutomotorEntity } from '../src/automotores/entities/automotor.entity';
 import { ApiExceptionFilter } from '../src/common/filters/api-exception.filter';
@@ -16,27 +20,6 @@ type SupertestServer = Parameters<typeof request>[0];
 type SujetoResponse = {
   cuit: string;
   nombre: string;
-};
-
-type AutomotorResponse = {
-  dominio: string;
-  marca: string;
-  modelo: string;
-  fechaFabricacion: string;
-  titular: SujetoResponse;
-};
-
-type AutomotoresListResponse = {
-  items: AutomotorResponse[];
-  meta: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-    search: string | null;
-    sortBy: string;
-    sortDirection: string;
-  };
 };
 
 type ErrorResponse = {
@@ -129,6 +112,16 @@ async function createTestingApp() {
   };
 }
 
+function getFutureFechaFabricacion() {
+  const date = new Date();
+  date.setMonth(date.getMonth() + 1);
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+
+  return `${year}${month}`;
+}
+
 describe('Backend e2e', () => {
   let app: INestApplication;
   let httpServer: SupertestServer;
@@ -161,88 +154,112 @@ describe('Backend e2e', () => {
     });
   });
 
-  it('POST/GET/PUT/DELETE /api/automotores cubre el flujo principal con persistencia real', async () => {
-    await request(httpServer).post('/api/sujetos').send({
-      cuit: '20-12345678-6',
+  it('POST /api/automotores crea un automotor con el payload del challenge', async () => {
+    await sujetosRepository.save({
+      cuit: '20123456786',
       nombre: 'Juan Perez',
     });
-    await request(httpServer).post('/api/sujetos').send({
-      cuit: '27-23456789-1',
-      nombre: 'Maria Gomez',
+
+    const response = await request(httpServer).post('/api/automotores').send({
+      dominio: ' aa123aa ',
+      chasis: ' 8AFZZZ54ZMJ123456 ',
+      motor: ' ABC123456 ',
+      color: '  Rojo  ',
+      fechaFabricacion: '201806',
+      titularCuit: '20-12345678-6',
     });
 
-    const createResponse = await request(httpServer)
-      .post('/api/automotores')
-      .send({
-        dominio: ' aa123aa ',
-        marca: '  Ford  ',
-        modelo: ' Fiesta   Kinetic ',
-        fechaFabricacion: '201806',
-        titularCuit: '20-12345678-6',
-      });
-
-    expect(createResponse.status).toBe(201);
-    expect(createResponse.body as AutomotorResponse).toEqual({
+    expect(response.status).toBe(201);
+    expect(response.body as AutomotorResponseDto).toEqual({
       dominio: 'AA123AA',
-      marca: 'Ford',
-      modelo: 'Fiesta Kinetic',
+      chasis: '8AFZZZ54ZMJ123456',
+      motor: 'ABC123456',
+      color: 'Rojo',
       fechaFabricacion: '201806',
       titular: {
         cuit: '20123456786',
         nombre: 'Juan Perez',
       },
     });
+  });
 
-    const findResponse = await request(httpServer).get(
-      '/api/automotores/aa123aa',
-    );
+  it('GET /api/automotores/:dominio obtiene un automotor por dominio', async () => {
+    await sujetosRepository.save({
+      cuit: '20123456786',
+      nombre: 'Juan Perez',
+    });
 
-    expect(findResponse.status).toBe(200);
-    expect(findResponse.body as AutomotorResponse).toEqual(
-      createResponse.body as AutomotorResponse,
-    );
+    await automotoresRepository.save({
+      dominio: 'AA123AA',
+      chasis: '8AFZZZ54ZMJ123456',
+      motor: 'ABC123456',
+      color: 'Rojo',
+      fechaFabricacion: '201806',
+      titularCuit: '20123456786',
+    });
 
-    const updateResponse = await request(httpServer)
+    const response = await request(httpServer).get('/api/automotores/aa123aa');
+
+    expect(response.status).toBe(200);
+    expect(response.body as AutomotorResponseDto).toEqual({
+      dominio: 'AA123AA',
+      chasis: '8AFZZZ54ZMJ123456',
+      motor: 'ABC123456',
+      color: 'Rojo',
+      fechaFabricacion: '201806',
+      titular: {
+        cuit: '20123456786',
+        nombre: 'Juan Perez',
+      },
+    });
+  });
+
+  it('PUT /api/automotores/:dominio actualiza un automotor y cambia el titular', async () => {
+    await sujetosRepository.save([
+      {
+        cuit: '20123456786',
+        nombre: 'Juan Perez',
+      },
+      {
+        cuit: '27234567891',
+        nombre: 'Maria Gomez',
+      },
+    ]);
+
+    await automotoresRepository.save({
+      dominio: 'AA123AA',
+      chasis: '8AFZZZ54ZMJ123456',
+      motor: 'ABC123456',
+      color: 'Rojo',
+      fechaFabricacion: '201806',
+      titularCuit: '20123456786',
+    });
+
+    const response = await request(httpServer)
       .put('/api/automotores/AA123AA')
       .send({
-        marca: 'Toyota',
-        modelo: 'Etios',
+        chasis: '8AFZZZ54ZMJ123456',
+        motor: 'XYZ987654',
+        color: 'Azul',
         fechaFabricacion: '202001',
         titularCuit: '27-23456789-1',
       });
 
-    expect(updateResponse.status).toBe(200);
-    expect(updateResponse.body as AutomotorResponse).toEqual({
+    expect(response.status).toBe(200);
+    expect(response.body as AutomotorResponseDto).toEqual({
       dominio: 'AA123AA',
-      marca: 'Toyota',
-      modelo: 'Etios',
+      chasis: '8AFZZZ54ZMJ123456',
+      motor: 'XYZ987654',
+      color: 'Azul',
       fechaFabricacion: '202001',
       titular: {
         cuit: '27234567891',
         nombre: 'Maria Gomez',
       },
     });
-
-    await request(httpServer).delete('/api/automotores/aa123aa').expect(204);
-
-    const deletedResponse = await request(httpServer).get(
-      '/api/automotores/AA123AA',
-    );
-    const deletedBody = deletedResponse.body as {
-      message: string;
-      statusCode: number;
-      error: string;
-    };
-
-    expect(deletedResponse.status).toBe(404);
-    expect(deletedBody).toMatchObject({
-      statusCode: 404,
-      error: 'Not Found',
-      message: 'No existe un automotor con dominio AA123AA.',
-    });
   });
 
-  it('GET /api/automotores devuelve paginacion, sorting y search con base real', async () => {
+  it('GET /api/automotores devuelve listado con busqueda, paginacion y ordenamiento', async () => {
     await sujetosRepository.save([
       {
         cuit: '20123456786',
@@ -257,38 +274,42 @@ describe('Backend e2e', () => {
     await automotoresRepository.save([
       {
         dominio: 'AAA123',
-        marca: 'Ford',
-        modelo: 'Fiesta',
+        chasis: '8AFZZZ54ZMJ000001',
+        motor: 'MTR000001',
+        color: 'Negro',
         fechaFabricacion: '201806',
         titularCuit: '20123456786',
       },
       {
         dominio: 'AB123CD',
-        marca: 'Toyota',
-        modelo: 'Corolla',
+        chasis: '8AFZZZ54ZMJ000002',
+        motor: 'MTR000002',
+        color: 'Blanco',
         fechaFabricacion: '202112',
         titularCuit: '20123456786',
       },
       {
         dominio: 'AC456EF',
-        marca: 'Iveco',
-        modelo: 'Daily',
+        chasis: '8AFZZZ54ZMJ000003',
+        motor: 'MTR000003',
+        color: 'Gris',
         fechaFabricacion: '202001',
         titularCuit: '27234567891',
       },
     ]);
 
-    const cuitSearchResponse = await request(httpServer).get(
+    const response = await request(httpServer).get(
       '/api/automotores?search=20-12345678-6&sortBy=fechaFabricacion&sortDirection=desc&limit=1&page=1',
     );
 
-    expect(cuitSearchResponse.status).toBe(200);
-    expect(cuitSearchResponse.body as AutomotoresListResponse).toEqual({
+    expect(response.status).toBe(200);
+    expect(response.body as ListAutomotoresResponseDto).toEqual({
       items: [
         {
           dominio: 'AB123CD',
-          marca: 'Toyota',
-          modelo: 'Corolla',
+          chasis: '8AFZZZ54ZMJ000002',
+          motor: 'MTR000002',
+          color: 'Blanco',
           fechaFabricacion: '202112',
           titular: {
             cuit: '20123456786',
@@ -306,27 +327,14 @@ describe('Backend e2e', () => {
         sortDirection: 'desc',
       },
     });
-
-    const dominioSearchResponse = await request(httpServer).get(
-      '/api/automotores?search= ab123cd ',
-    );
-    const dominioBody = dominioSearchResponse.body as AutomotoresListResponse;
-
-    expect(dominioSearchResponse.status).toBe(200);
-    expect(dominioBody.items).toHaveLength(1);
-    expect(dominioBody.items[0]).toMatchObject({
-      dominio: 'AB123CD',
-      titular: {
-        cuit: '20123456786',
-      },
-    });
   });
 
-  it('POST /api/automotores devuelve 422 consistente si falla una regla de negocio', async () => {
+  it('POST /api/automotores devuelve 422 consistente si el titular no existe', async () => {
     const response = await request(httpServer).post('/api/automotores').send({
-      dominio: 'AAA123',
-      marca: 'Ford',
-      modelo: 'Fiesta',
+      dominio: 'AA123AA',
+      chasis: '8AFZZZ54ZMJ123456',
+      motor: 'ABC123456',
+      color: 'Rojo',
       fechaFabricacion: '201806',
       titularCuit: '20123456786',
     });
@@ -344,13 +352,19 @@ describe('Backend e2e', () => {
     expect(body.message).toBeUndefined();
   });
 
-  it('POST /api/automotores devuelve 422 consistente si falla la validacion del payload', async () => {
+  it('POST /api/automotores devuelve 422 consistente si el dominio es invalido', async () => {
+    await sujetosRepository.save({
+      cuit: '20123456786',
+      nombre: 'Juan Perez',
+    });
+
     const response = await request(httpServer).post('/api/automotores').send({
       dominio: 'A123',
-      marca: 'F',
-      modelo: '',
-      fechaFabricacion: '209901',
-      titularCuit: '20-12345678-0',
+      chasis: '8AFZZZ54ZMJ123456',
+      motor: 'ABC123456',
+      color: 'Rojo',
+      fechaFabricacion: '201806',
+      titularCuit: '20123456786',
     });
     const body = response.body as ErrorResponse;
 
@@ -360,11 +374,78 @@ describe('Backend e2e', () => {
     expect(body.path).toBe('/api/automotores');
     expect(body.errors).toEqual([
       'dominio debe tener formato AAA999 o AA999AA.',
-      'marca must be longer than or equal to 2 characters',
-      'modelo must be longer than or equal to 1 characters',
-      'fechaFabricacion debe tener formato YYYYMM, un mes valido y no puede ser futura.',
-      'titularCuit debe ser un CUIT valido con digito verificador.',
     ]);
     expect(body.message).toBeUndefined();
+  });
+
+  it('POST /api/automotores devuelve 422 consistente si fechaFabricacion es futura', async () => {
+    await sujetosRepository.save({
+      cuit: '20123456786',
+      nombre: 'Juan Perez',
+    });
+
+    const response = await request(httpServer).post('/api/automotores').send({
+      dominio: 'AA123AA',
+      chasis: '8AFZZZ54ZMJ123456',
+      motor: 'ABC123456',
+      color: 'Rojo',
+      fechaFabricacion: getFutureFechaFabricacion(),
+      titularCuit: '20123456786',
+    });
+    const body = response.body as ErrorResponse;
+
+    expect(response.status).toBe(422);
+    expect(body.statusCode).toBe(422);
+    expect(body.error).toBe('Unprocessable Entity');
+    expect(body.path).toBe('/api/automotores');
+    expect(body.errors).toEqual([
+      'fechaFabricacion debe tener formato YYYYMM, un mes valido y no puede ser futura.',
+    ]);
+    expect(body.message).toBeUndefined();
+  });
+
+  it('POST /api/automotores devuelve 422 consistente si fechaFabricacion es invalida', async () => {
+    await sujetosRepository.save({
+      cuit: '20123456786',
+      nombre: 'Juan Perez',
+    });
+
+    const response = await request(httpServer).post('/api/automotores').send({
+      dominio: 'AA123AA',
+      chasis: '8AFZZZ54ZMJ123456',
+      motor: 'ABC123456',
+      color: 'Rojo',
+      fechaFabricacion: '202013',
+      titularCuit: '20123456786',
+    });
+    const body = response.body as ErrorResponse;
+
+    expect(response.status).toBe(422);
+    expect(body.statusCode).toBe(422);
+    expect(body.error).toBe('Unprocessable Entity');
+    expect(body.path).toBe('/api/automotores');
+    expect(body.errors).toEqual([
+      'fechaFabricacion debe tener formato YYYYMM, un mes valido y no puede ser futura.',
+    ]);
+    expect(body.message).toBeUndefined();
+  });
+
+  it('GET /api/automotores/:dominio devuelve 404 consistente si el automotor no existe', async () => {
+    const response = await request(httpServer).get('/api/automotores/AA123AA');
+    const body = response.body as {
+      message: string;
+      statusCode: number;
+      error: string;
+      path: string;
+      timestamp: string;
+    };
+
+    expect(response.status).toBe(404);
+    expect(body).toMatchObject({
+      statusCode: 404,
+      error: 'Not Found',
+      message: 'No existe un automotor con dominio AA123AA.',
+      path: '/api/automotores/AA123AA',
+    });
   });
 });

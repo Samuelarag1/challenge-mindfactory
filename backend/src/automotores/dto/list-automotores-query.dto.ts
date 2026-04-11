@@ -5,8 +5,8 @@ import { normalizeDominio } from '../../common/utils/dominio.util';
 
 export const AUTOMOTOR_SORT_FIELDS = [
   'dominio',
-  'marca',
-  'modelo',
+  'chasis',
+  'color',
   'fechaFabricacion',
   'titularCuit',
 ] as const;

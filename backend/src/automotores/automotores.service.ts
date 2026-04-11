@@ -11,19 +11,12 @@ import {
   AutomotorSortField,
   ListAutomotoresQueryDto,
 } from './dto/list-automotores-query.dto';
+import {
+  AutomotorResponseDto,
+  ListAutomotoresResponseDto,
+} from './dto/automotor-response.dto';
 import { UpdateAutomotorDto } from './dto/update-automotor.dto';
 import { AutomotorEntity } from './entities/automotor.entity';
-
-type AutomotorResponse = {
-  dominio: string;
-  marca: string;
-  modelo: string;
-  fechaFabricacion: string;
-  titular: {
-    cuit: string;
-    nombre: string;
-  };
-};
 
 @Injectable()
 export class AutomotoresService {
@@ -34,7 +27,9 @@ export class AutomotoresService {
     private readonly sujetosRepository: Repository<SujetoEntity>,
   ) {}
 
-  async findAll(query: ListAutomotoresQueryDto) {
+  async findAll(
+    query: ListAutomotoresQueryDto,
+  ): Promise<ListAutomotoresResponseDto> {
     const builder = this.automotoresRepository
       .createQueryBuilder('automotor')
       .leftJoinAndSelect('automotor.titular', 'titular');
@@ -62,8 +57,8 @@ export class AutomotoresService {
 
     const sortMap: Record<AutomotorSortField, string> = {
       dominio: 'automotor.dominio',
-      marca: 'automotor.marca',
-      modelo: 'automotor.modelo',
+      chasis: 'automotor.chasis',
+      color: 'automotor.color',
       fechaFabricacion: 'automotor.fechaFabricacion',
       titularCuit: 'automotor.titularCuit',
     };
@@ -92,7 +87,7 @@ export class AutomotoresService {
     };
   }
 
-  async findOneByDominio(dominio: string) {
+  async findOneByDominio(dominio: string): Promise<AutomotorResponseDto> {
     const automotor = await this.automotoresRepository.findOne({
       where: { dominio },
       relations: { titular: true },
@@ -107,15 +102,16 @@ export class AutomotoresService {
     return this.toResponse(automotor);
   }
 
-  async create(payload: CreateAutomotorDto) {
+  async create(payload: CreateAutomotorDto): Promise<AutomotorResponseDto> {
     await this.ensureDominioAvailable(payload.dominio);
 
     const titular = await this.ensureTitularExists(payload.titularCuit);
 
     const automotor = this.automotoresRepository.create({
       dominio: payload.dominio,
-      marca: payload.marca,
-      modelo: payload.modelo,
+      chasis: payload.chasis,
+      motor: payload.motor,
+      color: payload.color,
       fechaFabricacion: payload.fechaFabricacion,
       titularCuit: titular.cuit,
       titular,
@@ -126,7 +122,10 @@ export class AutomotoresService {
     return this.findOneByDominio(automotor.dominio);
   }
 
-  async update(dominio: string, payload: UpdateAutomotorDto) {
+  async update(
+    dominio: string,
+    payload: UpdateAutomotorDto,
+  ): Promise<AutomotorResponseDto> {
     const automotor = await this.automotoresRepository.findOne({
       where: { dominio },
       relations: { titular: true },
@@ -140,8 +139,9 @@ export class AutomotoresService {
 
     const titular = await this.ensureTitularExists(payload.titularCuit);
 
-    automotor.marca = payload.marca;
-    automotor.modelo = payload.modelo;
+    automotor.chasis = payload.chasis;
+    automotor.motor = payload.motor;
+    automotor.color = payload.color;
     automotor.fechaFabricacion = payload.fechaFabricacion;
     automotor.titularCuit = titular.cuit;
     automotor.titular = titular;
@@ -187,11 +187,12 @@ export class AutomotoresService {
     return titular;
   }
 
-  private toResponse(entity: AutomotorEntity): AutomotorResponse {
+  private toResponse(entity: AutomotorEntity): AutomotorResponseDto {
     return {
       dominio: entity.dominio,
-      marca: entity.marca,
-      modelo: entity.modelo,
+      chasis: entity.chasis,
+      motor: entity.motor,
+      color: entity.color,
       fechaFabricacion: entity.fechaFabricacion,
       titular: {
         cuit: entity.titular.cuit,

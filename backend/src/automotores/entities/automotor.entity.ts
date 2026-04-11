@@ -14,11 +14,14 @@ export class AutomotorEntity {
   @PrimaryColumn({ type: 'varchar', length: 7 })
   dominio!: string;
 
-  @Column({ type: 'varchar', length: 60 })
-  marca!: string;
+  @Column({ type: 'varchar', length: 30 })
+  chasis!: string;
 
-  @Column({ type: 'varchar', length: 80 })
-  modelo!: string;
+  @Column({ type: 'varchar', length: 30 })
+  motor!: string;
+
+  @Column({ type: 'varchar', length: 40 })
+  color!: string;
 
   @Column({ name: 'fecha_fabricacion', type: 'varchar', length: 6 })
   fechaFabricacion!: string;

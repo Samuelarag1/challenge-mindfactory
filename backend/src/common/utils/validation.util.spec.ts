@@ -4,6 +4,17 @@ import {
   isValidFechaFabricacion,
   normalizeFechaFabricacion,
 } from './fecha-fabricacion.util';
+import { normalizeText } from './text.util';
+
+function getFutureFechaFabricacion() {
+  const date = new Date();
+  date.setMonth(date.getMonth() + 1);
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+
+  return `${year}${month}`;
+}
 
 describe('validation utils', () => {
   it('normaliza dominio de forma segura y valida formatos soportados', () => {
@@ -30,5 +41,10 @@ describe('validation utils', () => {
     expect(isValidFechaFabricacion('2020/01')).toBe(false);
     expect(isValidFechaFabricacion('20a20b01')).toBe(false);
     expect(isValidFechaFabricacion('202013')).toBe(false);
+    expect(isValidFechaFabricacion(getFutureFechaFabricacion())).toBe(false);
+  });
+
+  it('colapsa espacios internos en textos libres', () => {
+    expect(normalizeText('  Azul   metalizado  ')).toBe('Azul metalizado');
   });
 });
