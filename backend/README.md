@@ -73,7 +73,7 @@ Tomar como base [`.env.example`](./.env.example).
 - `DB_USERNAME=postgres`
 - `DB_PASSWORD=postgres`
 - `DB_NAME=challenge_mindfactory`
-- `DB_SYNCHRONIZE=true`
+- `DB_MIGRATIONS_RUN=true`
 - `DB_SEED=false`
 
 ## Uso
@@ -116,6 +116,10 @@ Servicios:
 El seed es opt-in y solo corre si `DB_SEED=true`.
 
 Hace `upsert`, asi que es idempotente y se puede ejecutar mas de una vez sin duplicar datos.
+
+Antes del seed, el backend ejecuta una migracion idempotente para asegurar el esquema actual de `sujetos` y `automotores`.
+
+Si encuentra una base legacy con `automotores.marca` y `automotores.modelo`, la migra al esquema nuevo con `chasis`, `motor` y `color` para evitar fallos de arranque sobre volumenes persistidos.
 
 Datos demo:
 
@@ -389,7 +393,9 @@ Cambios incompatibles:
 - `sortBy` ya no admite `marca` ni `modelo`.
 - La tabla `automotores` cambia su esquema para persistir `chasis`, `motor` y `color` en lugar de `marca` y `modelo`.
 
-Como el proyecto ya trabaja con `TypeORM` + `synchronize`, no se agrego una infraestructura nueva de migraciones para este ajuste. Si existe una base previa con el esquema viejo, conviene recrear el esquema o dejar que `synchronize` aplique el cambio en un entorno descartable. Para ambientes persistentes, el cambio debe tratarse como migracion de ruptura.
+El runtime ya no depende de `TypeORM synchronize` para este cambio. El backend ejecuta una migracion idempotente al iniciar y puede levantar tanto con una base nueva como con una base persistida del esquema anterior.
+
+Para filas legacy preexistentes de `automotores`, la migracion completa `chasis` y `motor` con identificadores tecnicos `LEGACY-*` y `color` con `No informado`, solo para destrabar la compatibilidad de datos viejos que no tenian esos campos en origen.
 
 ## Herramientas para verificar el proyecto
 
