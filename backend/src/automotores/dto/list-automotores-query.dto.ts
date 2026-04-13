@@ -1,19 +1,20 @@
 import { Transform } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import { normalizeCuit } from '../../common/utils/cuit.util';
-import { normalizeDominio } from '../../common/utils/dominio.util';
+import { normalizeLicensePlate } from '../../common/utils/dominio.util';
 
-export const AUTOMOTOR_SORT_FIELDS = [
-  'dominio',
-  'chasis',
+export const VEHICLE_SORT_FIELDS = [
+  'licensePlate',
+  'chassis',
   'color',
-  'fechaFabricacion',
-  'titularCuit',
+  'manufactureDate',
+  'ownerCuit',
+  'ownerName',
 ] as const;
 
-export type AutomotorSortField = (typeof AUTOMOTOR_SORT_FIELDS)[number];
+export type VehicleSortField = (typeof VEHICLE_SORT_FIELDS)[number];
 
-export class ListAutomotoresQueryDto {
+export class ListVehiclesQueryDto {
   @Transform(({ value }) => {
     if (value === undefined) {
       return 1;
@@ -51,13 +52,13 @@ export class ListAutomotoresQueryDto {
 
   @Transform(({ value }) => {
     if (value === undefined) {
-      return 'dominio';
+      return 'licensePlate';
     }
 
     return String(value);
   })
-  @IsIn(AUTOMOTOR_SORT_FIELDS)
-  sortBy: AutomotorSortField = 'dominio';
+  @IsIn(VEHICLE_SORT_FIELDS)
+  sortBy: VehicleSortField = 'licensePlate';
 
   @Transform(({ value }) => {
     if (value === undefined) {
@@ -69,12 +70,12 @@ export class ListAutomotoresQueryDto {
   @IsIn(['asc', 'desc'])
   sortDirection: 'asc' | 'desc' = 'asc';
 
-  get normalizedDominioSearch() {
+  get normalizedLicensePlateSearch() {
     if (!this.search) {
       return '';
     }
 
-    return normalizeDominio(this.search);
+    return normalizeLicensePlate(this.search);
   }
 
   get normalizedCuitSearch() {

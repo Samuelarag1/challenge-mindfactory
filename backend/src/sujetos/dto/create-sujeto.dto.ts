@@ -4,7 +4,7 @@ import { normalizeCuit } from '../../common/utils/cuit.util';
 import { normalizeText } from '../../common/utils/text.util';
 import { IsCuit } from '../../common/validators/is-cuit.validator';
 
-export class CreateSujetoDto {
+export class CreateOwnerDto {
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? normalizeCuit(value) : value,
   )
@@ -18,5 +18,5 @@ export class CreateSujetoDto {
   @IsString()
   @MinLength(3)
   @MaxLength(120)
-  nombre!: string;
+  name!: string;
 }

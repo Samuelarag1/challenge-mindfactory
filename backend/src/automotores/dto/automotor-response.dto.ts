@@ -1,18 +1,18 @@
-export class AutomotorTitularResponseDto {
+export class VehicleOwnerResponseDto {
   cuit!: string;
-  nombre!: string;
+  name!: string;
 }
 
-export class AutomotorResponseDto {
-  dominio!: string;
-  chasis!: string;
-  motor!: string;
+export class VehicleResponseDto {
+  licensePlate!: string;
+  chassis!: string;
+  engine!: string;
   color!: string;
-  fechaFabricacion!: string;
-  titular!: AutomotorTitularResponseDto;
+  manufactureDate!: string;
+  owner!: VehicleOwnerResponseDto | null;
 }
 
-export class AutomotoresListMetaDto {
+export class VehiclesListMetaDto {
   page!: number;
   limit!: number;
   total!: number;
@@ -22,7 +22,7 @@ export class AutomotoresListMetaDto {
   sortDirection!: string;
 }
 
-export class ListAutomotoresResponseDto {
-  items!: AutomotorResponseDto[];
-  meta!: AutomotoresListMetaDto;
+export class ListVehiclesResponseDto {
+  items!: VehicleResponseDto[];
+  meta!: VehiclesListMetaDto;
 }

@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { SujetoEntity } from './entities/sujeto.entity';
-import { SujetosController } from './sujetos.controller';
-import { SujetosService } from './sujetos.service';
+import { OwnerEntity } from './entities/sujeto.entity';
+import { OwnersController } from './sujetos.controller';
+import { OwnersService } from './sujetos.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([SujetoEntity])],
-  controllers: [SujetosController],
-  providers: [SujetosService],
-  exports: [SujetosService],
+  imports: [TypeOrmModule.forFeature([OwnerEntity])],
+  controllers: [OwnersController],
+  providers: [OwnersService],
+  exports: [OwnersService],
 })
-export class SujetosModule {}
+export class OwnersModule {}

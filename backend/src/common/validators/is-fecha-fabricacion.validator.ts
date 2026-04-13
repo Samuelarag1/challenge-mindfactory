@@ -3,21 +3,21 @@ import {
   ValidationOptions,
   registerDecorator,
 } from 'class-validator';
-import { isValidFechaFabricacion } from '../utils/fecha-fabricacion.util';
+import { isValidManufactureDate } from '../utils/fecha-fabricacion.util';
 
-export function IsFechaFabricacion(validationOptions?: ValidationOptions) {
+export function IsManufactureDate(validationOptions?: ValidationOptions) {
   return function (object: object, propertyName: string) {
     registerDecorator({
-      name: 'isFechaFabricacion',
+      name: 'isManufactureDate',
       target: object.constructor,
       propertyName,
       options: validationOptions,
       validator: {
         validate(value: unknown) {
-          return typeof value === 'string' && isValidFechaFabricacion(value);
+          return typeof value === 'string' && isValidManufactureDate(value);
         },
         defaultMessage(args: ValidationArguments) {
-          return `${args.property} debe tener formato YYYYMM, un mes valido y no puede ser futura.`;
+          return `${args.property} debe ser una fecha ISO valida y no puede ser futura.`;
         },
       },
     });

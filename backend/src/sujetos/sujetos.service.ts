@@ -5,56 +5,56 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CreateSujetoDto } from './dto/create-sujeto.dto';
-import { SujetoEntity } from './entities/sujeto.entity';
+import { CreateOwnerDto } from './dto/create-sujeto.dto';
+import { OwnerEntity } from './entities/sujeto.entity';
 
-type SujetoResponse = {
+type OwnerResponse = {
   cuit: string;
-  nombre: string;
+  name: string;
 };
 
 @Injectable()
-export class SujetosService {
+export class OwnersService {
   constructor(
-    @InjectRepository(SujetoEntity)
-    private readonly sujetosRepository: Repository<SujetoEntity>,
+    @InjectRepository(OwnerEntity)
+    private readonly ownersRepository: Repository<OwnerEntity>,
   ) {}
 
   async findByCuit(cuit: string) {
-    const sujeto = await this.sujetosRepository.findOneBy({ cuit });
+    const owner = await this.ownersRepository.findOneBy({ cuit });
 
-    if (!sujeto) {
-      throw new NotFoundException(`No existe un sujeto con CUIT ${cuit}.`);
+    if (!owner) {
+      throw new NotFoundException(`No existe un titular con CUIT ${cuit}.`);
     }
 
-    return this.toResponse(sujeto);
+    return this.toResponse(owner);
   }
 
-  async create(payload: CreateSujetoDto) {
-    const exists = await this.sujetosRepository.existsBy({
+  async create(payload: CreateOwnerDto) {
+    const exists = await this.ownersRepository.existsBy({
       cuit: payload.cuit,
     });
 
     if (exists) {
       throw new UnprocessableEntityException({
-        errors: [`Ya existe un sujeto con CUIT ${payload.cuit}.`],
+        errors: [`Ya existe un titular con CUIT ${payload.cuit}.`],
       });
     }
 
-    const sujeto = this.sujetosRepository.create({
+    const owner = this.ownersRepository.create({
       cuit: payload.cuit,
-      nombre: payload.nombre,
+      name: payload.name,
     });
 
-    await this.sujetosRepository.save(sujeto);
+    await this.ownersRepository.save(owner);
 
-    return this.toResponse(sujeto);
+    return this.toResponse(owner);
   }
 
-  private toResponse(entity: SujetoEntity): SujetoResponse {
+  private toResponse(entity: OwnerEntity): OwnerResponse {
     return {
       cuit: entity.cuit,
-      nombre: entity.nombre,
+      name: entity.name,
     };
   }
 }

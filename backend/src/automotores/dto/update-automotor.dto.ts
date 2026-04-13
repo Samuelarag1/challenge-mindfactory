@@ -1,19 +1,19 @@
 import { Transform } from 'class-transformer';
 import { IsString, MaxLength, MinLength } from 'class-validator';
 import { normalizeCuit } from '../../common/utils/cuit.util';
-import { normalizeFechaFabricacion } from '../../common/utils/fecha-fabricacion.util';
+import { normalizeManufactureDate } from '../../common/utils/fecha-fabricacion.util';
 import { normalizeText } from '../../common/utils/text.util';
 import { IsCuit } from '../../common/validators/is-cuit.validator';
-import { IsFechaFabricacion } from '../../common/validators/is-fecha-fabricacion.validator';
+import { IsManufactureDate } from '../../common/validators/is-fecha-fabricacion.validator';
 
-export class UpdateAutomotorDto {
+export class UpdateVehicleDto {
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? normalizeText(value) : value,
   )
   @IsString()
   @MinLength(3)
   @MaxLength(30)
-  chasis!: string;
+  chassis!: string;
 
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? normalizeText(value) : value,
@@ -21,7 +21,7 @@ export class UpdateAutomotorDto {
   @IsString()
   @MinLength(3)
   @MaxLength(30)
-  motor!: string;
+  engine!: string;
 
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? normalizeText(value) : value,
@@ -32,14 +32,14 @@ export class UpdateAutomotorDto {
   color!: string;
 
   @Transform(({ value }: { value: unknown }) =>
-    typeof value === 'string' ? normalizeFechaFabricacion(value) : value,
+    typeof value === 'string' ? normalizeManufactureDate(value) : value,
   )
-  @IsFechaFabricacion()
-  fechaFabricacion!: string;
+  @IsManufactureDate()
+  manufactureDate!: string;
 
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? normalizeCuit(value) : value,
   )
   @IsCuit()
-  titularCuit!: string;
+  ownerCuit!: string;
 }

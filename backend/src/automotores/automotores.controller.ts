@@ -10,42 +10,42 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
-import { AutomotorDominioParamDto } from './dto/automotor-dominio-param.dto';
-import { CreateAutomotorDto } from './dto/create-automotor.dto';
-import { ListAutomotoresQueryDto } from './dto/list-automotores-query.dto';
-import { UpdateAutomotorDto } from './dto/update-automotor.dto';
-import { AutomotoresService } from './automotores.service';
+import { VehicleLicensePlateParamDto } from './dto/automotor-dominio-param.dto';
+import { CreateVehicleDto } from './dto/create-automotor.dto';
+import { ListVehiclesQueryDto } from './dto/list-automotores-query.dto';
+import { UpdateVehicleDto } from './dto/update-automotor.dto';
+import { VehiclesService } from './automotores.service';
 
-@Controller('automotores')
-export class AutomotoresController {
-  constructor(private readonly automotoresService: AutomotoresService) {}
+@Controller('vehicles')
+export class VehiclesController {
+  constructor(private readonly vehiclesService: VehiclesService) {}
 
   @Get()
-  findAll(@Query() query: ListAutomotoresQueryDto) {
-    return this.automotoresService.findAll(query);
+  findAll(@Query() query: ListVehiclesQueryDto) {
+    return this.vehiclesService.findAll(query);
   }
 
-  @Get(':dominio')
-  findOne(@Param() params: AutomotorDominioParamDto) {
-    return this.automotoresService.findOneByDominio(params.dominio);
+  @Get(':licensePlate')
+  findOne(@Param() params: VehicleLicensePlateParamDto) {
+    return this.vehiclesService.findOneByLicensePlate(params.licensePlate);
   }
 
   @Post()
-  create(@Body() payload: CreateAutomotorDto) {
-    return this.automotoresService.create(payload);
+  create(@Body() payload: CreateVehicleDto) {
+    return this.vehiclesService.create(payload);
   }
 
-  @Put(':dominio')
+  @Put(':licensePlate')
   update(
-    @Param() params: AutomotorDominioParamDto,
-    @Body() payload: UpdateAutomotorDto,
+    @Param() params: VehicleLicensePlateParamDto,
+    @Body() payload: UpdateVehicleDto,
   ) {
-    return this.automotoresService.update(params.dominio, payload);
+    return this.vehiclesService.update(params.licensePlate, payload);
   }
 
-  @Delete(':dominio')
+  @Delete(':licensePlate')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param() params: AutomotorDominioParamDto) {
-    await this.automotoresService.remove(params.dominio);
+  async remove(@Param() params: VehicleLicensePlateParamDto) {
+    await this.vehiclesService.remove(params.licensePlate);
   }
 }

@@ -1,19 +1,19 @@
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
-import { CreateSujetoDto } from './dto/create-sujeto.dto';
-import { FindSujetoByCuitQueryDto } from './dto/find-sujeto-by-cuit-query.dto';
-import { SujetosService } from './sujetos.service';
+import { CreateOwnerDto } from './dto/create-sujeto.dto';
+import { FindOwnerByCuitQueryDto } from './dto/find-sujeto-by-cuit-query.dto';
+import { OwnersService } from './sujetos.service';
 
-@Controller('sujetos')
-export class SujetosController {
-  constructor(private readonly sujetosService: SujetosService) {}
+@Controller('owners')
+export class OwnersController {
+  constructor(private readonly ownersService: OwnersService) {}
 
   @Get('by-cuit')
-  findByCuit(@Query() query: FindSujetoByCuitQueryDto) {
-    return this.sujetosService.findByCuit(query.cuit);
+  findByCuit(@Query() query: FindOwnerByCuitQueryDto) {
+    return this.ownersService.findByCuit(query.cuit);
   }
 
   @Post()
-  create(@Body() payload: CreateSujetoDto) {
-    return this.sujetosService.create(payload);
+  create(@Body() payload: CreateOwnerDto) {
+    return this.ownersService.create(payload);
   }
 }

@@ -124,13 +124,13 @@ Si encuentra una base legacy con `automotores.marca` y `automotores.modelo`, la 
 Datos demo:
 
 - Sujetos:
-  - `20123456786` / `Juan Perez`
-  - `27234567891` / `Maria Gomez`
-  - `30712345671` / `Transporte Delta SA`
+  - 10 sujetos demo
+  - incluye `Juan Perez`, `Maria Gomez`, `Transporte Delta SA`, `Lucia Fernandez`, `Carla Ruiz`, `Diego Martinez` y mas
 - Automotores:
-  - `AAA123` / `8AFZZZ54ZMJ000001` / `MTR000001` / `Blanco` / `201806` / titular `20123456786`
-  - `AB123CD` / `8AFZZZ54ZMJ000002` / `MTR000002` / `Negro` / `202112` / titular `27234567891`
-  - `AC456EF` / `8AFZZZ54ZMJ000003` / `MTR000003` / `Gris` / `202001` / titular `30712345671`
+  - 25 automotores demo
+  - mezcla dominios `AAA999` y `AA999AA`
+  - colores y fechas variados para probar paginacion, ordenamiento y filtros
+  - ejemplos: `AAA123`, `AB123CD`, `AC456EF`, `AA123AA`, `AP456QR`, `AS789TU`
 
 ## Endpoints
 

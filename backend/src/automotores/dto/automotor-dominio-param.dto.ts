@@ -1,13 +1,13 @@
 import { Transform } from 'class-transformer';
 import { IsNotEmpty } from 'class-validator';
-import { normalizeDominio } from '../../common/utils/dominio.util';
-import { IsDominio } from '../../common/validators/is-dominio.validator';
+import { normalizeLicensePlate } from '../../common/utils/dominio.util';
+import { IsLicensePlate } from '../../common/validators/is-dominio.validator';
 
-export class AutomotorDominioParamDto {
+export class VehicleLicensePlateParamDto {
   @Transform(({ value }: { value: unknown }) =>
-    typeof value === 'string' ? normalizeDominio(value) : value,
+    typeof value === 'string' ? normalizeLicensePlate(value) : value,
   )
   @IsNotEmpty()
-  @IsDominio()
-  dominio!: string;
+  @IsLicensePlate()
+  licensePlate!: string;
 }

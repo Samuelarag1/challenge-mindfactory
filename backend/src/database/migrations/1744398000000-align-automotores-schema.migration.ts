@@ -4,8 +4,8 @@ export class AlignAutomotoresSchema1744398000000 implements MigrationInterface {
   name = 'AlignAutomotoresSchema1744398000000';
 
   async up(queryRunner: QueryRunner): Promise<void> {
-    await this.ensureSujetosTable(queryRunner);
-    await this.ensureAutomotoresTable(queryRunner);
+    await this.ensureOwnersTable(queryRunner);
+    await this.ensureVehiclesTable(queryRunner);
   }
 
   async down(queryRunner: QueryRunner): Promise<void> {
@@ -18,10 +18,10 @@ export class AlignAutomotoresSchema1744398000000 implements MigrationInterface {
     }
   }
 
-  private async ensureSujetosTable(queryRunner: QueryRunner) {
-    const hasSujetosTable = await queryRunner.hasTable('sujetos');
+  private async ensureOwnersTable(queryRunner: QueryRunner) {
+    const hasOwnersTable = await queryRunner.hasTable('sujetos');
 
-    if (!hasSujetosTable) {
+    if (!hasOwnersTable) {
       await queryRunner.query(`
         CREATE TABLE "sujetos" (
           "cuit" character varying(11) NOT NULL,
@@ -49,10 +49,10 @@ export class AlignAutomotoresSchema1744398000000 implements MigrationInterface {
     );
   }
 
-  private async ensureAutomotoresTable(queryRunner: QueryRunner) {
-    const hasAutomotoresTable = await queryRunner.hasTable('automotores');
+  private async ensureVehiclesTable(queryRunner: QueryRunner) {
+    const hasVehiclesTable = await queryRunner.hasTable('automotores');
 
-    if (!hasAutomotoresTable) {
+    if (!hasVehiclesTable) {
       await queryRunner.query(`
         CREATE TABLE "automotores" (
           "dominio" character varying(7) NOT NULL,

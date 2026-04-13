@@ -6,18 +6,18 @@ import {
   PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { AutomotorEntity } from '../../automotores/entities/automotor.entity';
+import { VehicleEntity } from '../../automotores/entities/automotor.entity';
 
 @Entity({ name: 'sujetos' })
-export class SujetoEntity {
+export class OwnerEntity {
   @PrimaryColumn({ type: 'varchar', length: 11 })
   cuit!: string;
 
-  @Column({ type: 'varchar', length: 120 })
-  nombre!: string;
+  @Column({ name: 'nombre', type: 'varchar', length: 120 })
+  name!: string;
 
-  @OneToMany(() => AutomotorEntity, (automotor) => automotor.titular)
-  automotores!: AutomotorEntity[];
+  @OneToMany(() => VehicleEntity, (vehicle) => vehicle.owner)
+  vehicles!: VehicleEntity[];
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;

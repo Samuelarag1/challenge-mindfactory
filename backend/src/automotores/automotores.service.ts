@@ -5,199 +5,285 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, Repository } from 'typeorm';
-import { SujetoEntity } from '../sujetos/entities/sujeto.entity';
-import { CreateAutomotorDto } from './dto/create-automotor.dto';
+import { OwnerEntity } from '../sujetos/entities/sujeto.entity';
+import { CreateVehicleDto } from './dto/create-automotor.dto';
 import {
-  AutomotorSortField,
-  ListAutomotoresQueryDto,
+  ListVehiclesQueryDto,
+  VehicleSortField,
 } from './dto/list-automotores-query.dto';
 import {
-  AutomotorResponseDto,
-  ListAutomotoresResponseDto,
+  ListVehiclesResponseDto,
+  VehicleResponseDto,
 } from './dto/automotor-response.dto';
-import { UpdateAutomotorDto } from './dto/update-automotor.dto';
-import { AutomotorEntity } from './entities/automotor.entity';
+import { UpdateVehicleDto } from './dto/update-automotor.dto';
+import { VehicleEntity } from './entities/automotor.entity';
 
 @Injectable()
-export class AutomotoresService {
+export class VehiclesService {
   constructor(
-    @InjectRepository(AutomotorEntity)
-    private readonly automotoresRepository: Repository<AutomotorEntity>,
-    @InjectRepository(SujetoEntity)
-    private readonly sujetosRepository: Repository<SujetoEntity>,
+    @InjectRepository(VehicleEntity)
+    private readonly vehiclesRepository: Repository<VehicleEntity>,
+    @InjectRepository(OwnerEntity)
+    private readonly ownersRepository: Repository<OwnerEntity>,
   ) {}
 
-  async findAll(
-    query: ListAutomotoresQueryDto,
-  ): Promise<ListAutomotoresResponseDto> {
-    const builder = this.automotoresRepository
-      .createQueryBuilder('automotor')
-      .leftJoinAndSelect('automotor.titular', 'titular');
+  // async findAll(query: ListVehiclesQueryDto): Promise<ListVehiclesResponseDto> {
+  //   const builder = this.vehiclesRepository
+  //     .createQueryBuilder('vehicle')
+  //     .leftJoinAndSelect('vehicle.owner', 'owner');
 
-    const dominioSearch = query.normalizedDominioSearch;
-    const cuitSearch = query.normalizedCuitSearch;
+  //   const licensePlateSearch = query.normalizedLicensePlateSearch;
+  //   const cuitSearch = query.normalizedCuitSearch;
 
-    if (dominioSearch || cuitSearch) {
-      builder.andWhere(
-        new Brackets((where) => {
-          if (dominioSearch) {
-            where.orWhere('automotor.dominio ILIKE :dominio', {
-              dominio: `%${dominioSearch}%`,
-            });
-          }
+  //   if (licensePlateSearch || cuitSearch) {
+  //     builder.andWhere(
+  //       new Brackets((where) => {
+  //         if (licensePlateSearch) {
+  //           where.orWhere('vehicle.dominio ILIKE :licensePlate', {
+  //             licensePlate: `%${licensePlateSearch}%`,
+  //           });
+  //         }
 
-          if (cuitSearch) {
-            where.orWhere('automotor.titularCuit LIKE :cuit', {
-              cuit: `%${cuitSearch}%`,
-            });
-          }
-        }),
-      );
-    }
+  //         if (cuitSearch) {
+  //           where.orWhere('vehicle.titular_cuit LIKE :cuit', {
+  //             cuit: `%${cuitSearch}%`,
+  //           });
+  //         }
+  //       }),
+  //     );
+  //   }
 
-    const sortMap: Record<AutomotorSortField, string> = {
-      dominio: 'automotor.dominio',
-      chasis: 'automotor.chasis',
-      color: 'automotor.color',
-      fechaFabricacion: 'automotor.fechaFabricacion',
-      titularCuit: 'automotor.titularCuit',
-    };
+  //   const sortMap: Record<VehicleSortField, string> = {
+  //     licensePlate: 'vehicle.dominio',
+  //     chassis: 'vehicle.chasis',
+  //     color: 'vehicle.color',
+  //     manufactureDate: 'vehicle.fecha_fabricacion',
+  //     ownerCuit: 'vehicle.titular_cuit',
+  //     ownerName: 'owner.nombre',
+  //   };
 
-    builder
-      .orderBy(
-        sortMap[query.sortBy],
-        query.sortDirection.toUpperCase() as 'ASC' | 'DESC',
-      )
-      .skip((query.page - 1) * query.limit)
-      .take(query.limit);
+  //   builder
+  //     .orderBy(
+  //       sortMap[query.sortBy],
+  //       query.sortDirection.toUpperCase() as 'ASC' | 'DESC',
+  //     )
+  //     .skip((query.page - 1) * query.limit)
+  //     .take(query.limit);
 
-    const [items, total] = await builder.getManyAndCount();
+  //   const [items, total] = await builder.getManyAndCount();
 
-    return {
-      items: items.map((item) => this.toResponse(item)),
-      meta: {
-        page: query.page,
-        limit: query.limit,
-        total,
-        totalPages: total === 0 ? 0 : Math.ceil(total / query.limit),
-        search: query.search ?? null,
+  //   return {
+  //     items: items.map((item) => this.toResponse(item)),
+  //     meta: {
+  //       page: query.page,
+  //       limit: query.limit,
+  //       total,
+  //       totalPages: total === 0 ? 0 : Math.ceil(total / query.limit),
+  //       search: query.search ?? null,
+  //       sortBy: query.sortBy,
+  //       sortDirection: query.sortDirection,
+  //     },
+  //   };
+  // }
+  async findAll(query: ListVehiclesQueryDto): Promise<ListVehiclesResponseDto> {
+    try {
+      console.log('QUERY', query);
+
+      const builder = this.vehiclesRepository
+        .createQueryBuilder('vehicle')
+        .leftJoinAndSelect('vehicle.owner', 'owner');
+
+      const licensePlateSearch = query.normalizedLicensePlateSearch;
+      const cuitSearch = query.normalizedCuitSearch;
+
+      console.log('SEARCHES', { licensePlateSearch, cuitSearch });
+
+      if (licensePlateSearch || cuitSearch) {
+        builder.andWhere(
+          new Brackets((where) => {
+            if (licensePlateSearch) {
+              where.orWhere('vehicle.dominio ILIKE :licensePlate', {
+                licensePlate: `%${licensePlateSearch}%`,
+              });
+            }
+
+            if (cuitSearch) {
+              where.orWhere('vehicle.titular_cuit LIKE :cuit', {
+                cuit: `%${cuitSearch}%`,
+              });
+            }
+          }),
+        );
+      }
+
+      const sortMap: Record<VehicleSortField, string> = {
+        licensePlate: 'vehicle.licensePlate',
+        chassis: 'vehicle.chassis',
+        color: 'vehicle.color',
+        manufactureDate: 'vehicle.manufactureDate',
+        ownerCuit: 'vehicle.ownerCuit',
+        ownerName: 'owner.name',
+      };
+
+      console.log('ORDER BY', {
         sortBy: query.sortBy,
         sortDirection: query.sortDirection,
-      },
-    };
-  }
+        mapped: sortMap[query.sortBy],
+      });
 
-  async findOneByDominio(dominio: string): Promise<AutomotorResponseDto> {
-    const automotor = await this.automotoresRepository.findOne({
-      where: { dominio },
-      relations: { titular: true },
+      builder
+        .orderBy(
+          sortMap[query.sortBy],
+          query.sortDirection.toUpperCase() as 'ASC' | 'DESC',
+        )
+        .skip((query.page - 1) * query.limit)
+        .take(query.limit);
+
+      console.log('SQL', builder.getSql());
+      console.log('PARAMS', builder.getParameters());
+
+      const [items, total] = await builder.getManyAndCount();
+
+      console.log(
+        'ITEMS',
+        items.map((item) => ({
+          licensePlate: item.licensePlate,
+          ownerCuit: item.ownerCuit,
+          owner: item.owner,
+        })),
+      );
+
+      return {
+        items: items.map((item) => this.toResponse(item)),
+        meta: {
+          page: query.page,
+          limit: query.limit,
+          total,
+          totalPages: total === 0 ? 0 : Math.ceil(total / query.limit),
+          search: query.search ?? null,
+          sortBy: query.sortBy,
+          sortDirection: query.sortDirection,
+        },
+      };
+    } catch (error) {
+      console.error('Vehicles findAll error:', error);
+      throw error;
+    }
+  }
+  async findOneByLicensePlate(
+    licensePlate: string,
+  ): Promise<VehicleResponseDto> {
+    const vehicle = await this.vehiclesRepository.findOne({
+      where: { licensePlate },
+      relations: { owner: true },
     });
 
-    if (!automotor) {
+    if (!vehicle) {
       throw new NotFoundException(
-        `No existe un automotor con dominio ${dominio}.`,
+        `No existe un automotor con dominio ${licensePlate}.`,
       );
     }
 
-    return this.toResponse(automotor);
+    return this.toResponse(vehicle);
   }
 
-  async create(payload: CreateAutomotorDto): Promise<AutomotorResponseDto> {
-    await this.ensureDominioAvailable(payload.dominio);
+  async create(payload: CreateVehicleDto): Promise<VehicleResponseDto> {
+    await this.ensureLicensePlateAvailable(payload.licensePlate);
 
-    const titular = await this.ensureTitularExists(payload.titularCuit);
+    const owner = await this.ensureOwnerExists(payload.ownerCuit);
 
-    const automotor = this.automotoresRepository.create({
-      dominio: payload.dominio,
-      chasis: payload.chasis,
-      motor: payload.motor,
+    const vehicle = this.vehiclesRepository.create({
+      licensePlate: payload.licensePlate,
+      chassis: payload.chassis,
+      engine: payload.engine,
       color: payload.color,
-      fechaFabricacion: payload.fechaFabricacion,
-      titularCuit: titular.cuit,
-      titular,
+      manufactureDate: payload.manufactureDate,
+      ownerCuit: owner.cuit,
+      owner,
     });
 
-    await this.automotoresRepository.save(automotor);
+    await this.vehiclesRepository.save(vehicle);
 
-    return this.findOneByDominio(automotor.dominio);
+    return this.findOneByLicensePlate(vehicle.licensePlate);
   }
 
   async update(
-    dominio: string,
-    payload: UpdateAutomotorDto,
-  ): Promise<AutomotorResponseDto> {
-    const automotor = await this.automotoresRepository.findOne({
-      where: { dominio },
-      relations: { titular: true },
+    licensePlate: string,
+    payload: UpdateVehicleDto,
+  ): Promise<VehicleResponseDto> {
+    const vehicle = await this.vehiclesRepository.findOne({
+      where: { licensePlate },
+      relations: { owner: true },
     });
 
-    if (!automotor) {
+    if (!vehicle) {
       throw new NotFoundException(
-        `No existe un automotor con dominio ${dominio}.`,
+        `No existe un automotor con dominio ${licensePlate}.`,
       );
     }
 
-    const titular = await this.ensureTitularExists(payload.titularCuit);
+    const owner = await this.ensureOwnerExists(payload.ownerCuit);
 
-    automotor.chasis = payload.chasis;
-    automotor.motor = payload.motor;
-    automotor.color = payload.color;
-    automotor.fechaFabricacion = payload.fechaFabricacion;
-    automotor.titularCuit = titular.cuit;
-    automotor.titular = titular;
+    vehicle.chassis = payload.chassis;
+    vehicle.engine = payload.engine;
+    vehicle.color = payload.color;
+    vehicle.manufactureDate = payload.manufactureDate;
+    vehicle.ownerCuit = owner.cuit;
+    vehicle.owner = owner;
 
-    await this.automotoresRepository.save(automotor);
+    await this.vehiclesRepository.save(vehicle);
 
-    return this.findOneByDominio(automotor.dominio);
+    return this.findOneByLicensePlate(vehicle.licensePlate);
   }
 
-  async remove(dominio: string) {
-    const automotor = await this.automotoresRepository.findOneBy({ dominio });
+  async remove(licensePlate: string) {
+    const vehicle = await this.vehiclesRepository.findOneBy({ licensePlate });
 
-    if (!automotor) {
+    if (!vehicle) {
       throw new NotFoundException(
-        `No existe un automotor con dominio ${dominio}.`,
+        `No existe un automotor con dominio ${licensePlate}.`,
       );
     }
 
-    await this.automotoresRepository.remove(automotor);
+    await this.vehiclesRepository.remove(vehicle);
   }
 
-  private async ensureDominioAvailable(dominio: string) {
-    const exists = await this.automotoresRepository.existsBy({ dominio });
+  private async ensureLicensePlateAvailable(licensePlate: string) {
+    const exists = await this.vehiclesRepository.existsBy({ licensePlate });
 
     if (exists) {
       throw new UnprocessableEntityException({
-        errors: [`Ya existe un automotor con dominio ${dominio}.`],
+        errors: [`Ya existe un automotor con dominio ${licensePlate}.`],
       });
     }
   }
 
-  private async ensureTitularExists(cuit: string) {
-    const titular = await this.sujetosRepository.findOneBy({ cuit });
+  private async ensureOwnerExists(cuit: string) {
+    const owner = await this.ownersRepository.findOneBy({ cuit });
 
-    if (!titular) {
+    if (!owner) {
       throw new UnprocessableEntityException({
         errors: [
-          `No existe un sujeto para el CUIT ${cuit}. Crealo y reintenta la operacion.`,
+          `No existe un titular para el CUIT ${cuit}. Crealo y reintenta la operacion.`,
         ],
       });
     }
 
-    return titular;
+    return owner;
   }
-
-  private toResponse(entity: AutomotorEntity): AutomotorResponseDto {
+  private toResponse(entity: VehicleEntity): VehicleResponseDto {
     return {
-      dominio: entity.dominio,
-      chasis: entity.chasis,
-      motor: entity.motor,
+      licensePlate: entity.licensePlate,
+      chassis: entity.chassis,
+      engine: entity.engine,
       color: entity.color,
-      fechaFabricacion: entity.fechaFabricacion,
-      titular: {
-        cuit: entity.titular.cuit,
-        nombre: entity.titular.nombre,
-      },
+      manufactureDate: entity.manufactureDate,
+      owner: entity.owner
+        ? {
+            cuit: entity.owner.cuit,
+            name: entity.owner.name,
+          }
+        : (null as any),
     };
   }
 }
