@@ -2,23 +2,43 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
 @import 'tailwindcss';
 
+:root {
+  --app-bg: #eef3f8;
+  --app-bg-accent: rgba(14, 116, 144, 0.08);
+  --surface-strong: #ffffff;
+  --surface-soft: #f8fbfd;
+  --border-subtle: rgba(148, 163, 184, 0.26);
+  --text-strong: #142033;
+  --text-muted: #52607a;
+  --focus-ring: rgba(14, 116, 144, 0.32);
+  --success-soft: #eef9f3;
+  --warning-soft: #fff7ed;
+  --error-soft: #fef2f2;
+}
+
 html {
   color-scheme: light;
+  scroll-behavior: smooth;
 }
 
 html,
 body {
+  color: var(--text-strong);
   margin: 0;
   min-height: 100%;
   font-family: 'Roboto', 'Helvetica Neue', sans-serif;
 }
 
 body {
-  background: #f4f7fb;
+  background: var(--app-bg);
 }
 
 * {
   box-sizing: border-box;
+}
+
+a {
+  color: inherit;
 }
 
 .full-width {
@@ -26,15 +46,47 @@ body {
 }
 
 .mat-mdc-card {
-  border-radius: 24px !important;
-  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.07) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06) !important;
 }
 
 .mat-mdc-outlined-button,
 .mat-mdc-unelevated-button {
-  border-radius: 999px !important;
+  border-radius: 14px !important;
+}
+
+.mat-mdc-button,
+.mat-mdc-outlined-button,
+.mat-mdc-unelevated-button {
+  border-radius: 14px !important;
 }
 
 .mat-mdc-form-field-subscript-wrapper {
   margin-top: 0.15rem;
+}
+
+:where(
+  button,
+  [href],
+  input,
+  select,
+  textarea,
+  [tabindex]:not([tabindex='-1'])
+):focus-visible {
+  border-radius: 12px;
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.visually-hidden {
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
 }

@@ -1,9 +1,12 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   computed,
+  inject,
   input,
   output,
+  viewChild,
 } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -39,184 +42,252 @@ export type VehicleFormGroup = FormGroup<{
   template: `
     <mat-card appearance="outlined" class="form-shell">
       <mat-card-header class="form-header">
-        <mat-card-title>{{ title() }}</mat-card-title>
+        <mat-card-title id="vehicle-form-title">{{ title() }}</mat-card-title>
         <mat-card-subtitle>
-          Completa los datos del vehiculo y valida el titular antes de guardar.
+          Completa los datos del automotor y valida el titular antes de guardar.
         </mat-card-subtitle>
       </mat-card-header>
 
-      <mat-card-content class="form-content">
-        @if (errors().length > 0) {
-          <mat-card appearance="outlined" class="error-card">
-            <mat-card-content>
-              <ul>
-                @for (error of errors(); track error) {
-                  <li>{{ error }}</li>
-                }
-              </ul>
-            </mat-card-content>
-          </mat-card>
-        }
-
-        <div class="form-grid" [formGroup]="form()">
-          <mat-form-field appearance="outline" class="field">
-            <mat-label>Dominio</mat-label>
-            <input
-              matInput
-              formControlName="licensePlate"
-              maxlength="7"
-              placeholder="AAA123 o AA123AA"
-              (blur)="normalizeControl('licensePlate')"
-            />
-            <mat-hint>Formatos permitidos: AAA123 o AA123AA.</mat-hint>
-            @if (control('licensePlate').hasError('required') && control('licensePlate').touched) {
-              <mat-error>El dominio es obligatorio.</mat-error>
-            }
-            @if (
-              control('licensePlate').hasError('licensePlate') &&
-              control('licensePlate').touched
-            ) {
-              <mat-error>Ingresa un dominio valido: AAA999 o AA999AA.</mat-error>
-            }
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="field">
-            <mat-label>CUIT del titular</mat-label>
-            <input
-              matInput
-              formControlName="ownerCuit"
-              maxlength="13"
-              placeholder="20123456786"
-              (blur)="handleOwnerCuitBlur()"
-            />
-            <mat-hint>Al salir del campo se consulta el titular.</mat-hint>
-            @if (control('ownerCuit').hasError('required') && control('ownerCuit').touched) {
-              <mat-error>El CUIT es obligatorio.</mat-error>
-            }
-            @if (control('ownerCuit').hasError('cuit') && control('ownerCuit').touched) {
-              <mat-error>Ingresa un CUIT valido con digito verificador.</mat-error>
-            }
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="field">
-            <mat-label>Chasis</mat-label>
-            <input
-              matInput
-              formControlName="chassis"
-              maxlength="30"
-              placeholder="8AFZZZ54ZMJ123456"
-            />
-            @if (showLengthError('chassis')) {
-              <mat-error>El chasis debe tener entre 3 y 30 caracteres.</mat-error>
-            }
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="field">
-            <mat-label>Motor</mat-label>
-            <input matInput formControlName="engine" maxlength="30" placeholder="ABC123456" />
-            @if (showLengthError('engine')) {
-              <mat-error>El motor debe tener entre 3 y 30 caracteres.</mat-error>
-            }
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="field">
-            <mat-label>Color</mat-label>
-            <input matInput formControlName="color" maxlength="40" placeholder="Rojo" />
-            @if (showLengthError('color')) {
-              <mat-error>El color debe tener entre 2 y 40 caracteres.</mat-error>
-            }
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="field">
-            <mat-label>Fecha de fabricacion</mat-label>
-            <input
-              matInput
-              type="date"
-              formControlName="manufactureDate"
-              (blur)="normalizeControl('manufactureDate')"
-            />
-            @if (
-              control('manufactureDate').hasError('required') &&
-              control('manufactureDate').touched
-            ) {
-              <mat-error>La fecha de fabricacion es obligatoria.</mat-error>
-            }
-            @if (
-              control('manufactureDate').hasError('dateInput') &&
-              control('manufactureDate').touched
-            ) {
-              <mat-error>Ingresa una fecha valida y no futura.</mat-error>
-            }
-          </mat-form-field>
-        </div>
-
-        <div class="status-stack">
-          @if (showOwnerReassignmentNotice()) {
-            <mat-card appearance="outlined" class="info-card info-card--warning">
+      <form
+        class="vehicle-form"
+        [formGroup]="form()"
+        [attr.aria-busy]="submitting() || ownerLookupLoading()"
+        aria-labelledby="vehicle-form-title"
+        (ngSubmit)="save.emit()"
+      >
+        <mat-card-content class="form-content">
+          @if (errors().length > 0) {
+            <mat-card
+              #errorSummary
+              appearance="outlined"
+              class="error-card"
+              tabindex="-1"
+              role="alert"
+              aria-live="assertive"
+            >
               <mat-card-content>
-                El CUIT cambio respecto del titular original. Al guardar se reasignara el automotor
-                al nuevo dueño.
+                <strong class="feedback-title">Revisa estos puntos antes de continuar:</strong>
+                <ul>
+                  @for (error of errors(); track error) {
+                    <li>{{ error }}</li>
+                  }
+                </ul>
               </mat-card-content>
             </mat-card>
           }
 
-          @if (owner()) {
-            <mat-card appearance="outlined" class="info-card">
-              <mat-card-content>
-                <strong>Titular resuelto:</strong> {{ owner()!.name }} (CUIT
-                {{ owner()!.cuit }})
-              </mat-card-content>
-            </mat-card>
-          }
-        </div>
-      </mat-card-content>
+          <p class="form-help">
+            Si cambias el CUIT en una edicion, el automotor quedara asociado al nuevo titular.
+          </p>
 
-      <mat-card-actions class="form-actions">
-        <p class="actions-copy">
-          Revisa el titular antes de guardar. Si modificaste el CUIT, el automotor quedara vinculado
-          al nuevo responsable.
-        </p>
+          <div class="form-grid">
+            <mat-form-field appearance="outline" class="field">
+              <mat-label>Dominio</mat-label>
+              <input
+                matInput
+                formControlName="licensePlate"
+                maxlength="7"
+                placeholder="AAA123 o AA123AA"
+                spellcheck="false"
+                autocomplete="off"
+                autocapitalize="characters"
+                (blur)="normalizeControl('licensePlate')"
+              />
+              <mat-hint>Formatos permitidos: AAA123 o AA123AA.</mat-hint>
+              @if (control('licensePlate').hasError('required') && control('licensePlate').touched) {
+                <mat-error>El dominio es obligatorio.</mat-error>
+              }
+              @if (
+                control('licensePlate').hasError('licensePlate') &&
+                control('licensePlate').touched
+              ) {
+                <mat-error>Ingresa un dominio valido: AAA123 o AA123AA.</mat-error>
+              }
+            </mat-form-field>
 
-        <div class="actions-group">
-          <button mat-button type="button" class="action-button" (click)="cancel.emit()">
-            Cancelar
-          </button>
-          <button
-            mat-stroked-button
-            color="primary"
-            type="button"
-            class="action-button"
-            [disabled]="ownerLookupLoading()"
-            (click)="lookupOwner.emit()"
-          >
-            @if (ownerLookupLoading()) {
-              <mat-spinner diameter="18" />
-            } @else {
-              <span>Validar titular</span>
+            <mat-form-field appearance="outline" class="field">
+              <mat-label>CUIT del titular</mat-label>
+              <input
+                matInput
+                formControlName="ownerCuit"
+                maxlength="13"
+                placeholder="20123456786"
+                spellcheck="false"
+                autocomplete="off"
+                inputmode="numeric"
+                (blur)="handleOwnerCuitBlur()"
+              />
+              <mat-hint>Se consulta al salir del campo o con el boton Validar titular.</mat-hint>
+              @if (control('ownerCuit').hasError('required') && control('ownerCuit').touched) {
+                <mat-error>El CUIT es obligatorio.</mat-error>
+              }
+              @if (control('ownerCuit').hasError('cuit') && control('ownerCuit').touched) {
+                <mat-error>Ingresa un CUIT valido con digito verificador.</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="field">
+              <mat-label>Chasis</mat-label>
+              <input
+                matInput
+                formControlName="chassis"
+                maxlength="30"
+                placeholder="8AFZZZ54ZMJ123456"
+                spellcheck="false"
+              />
+              @if (control('chassis').hasError('required') && control('chassis').touched) {
+                <mat-error>El chasis es obligatorio.</mat-error>
+              }
+              @if (
+                (control('chassis').hasError('minlength') ||
+                  control('chassis').hasError('maxlength')) &&
+                control('chassis').touched
+              ) {
+                <mat-error>El chasis debe tener entre 3 y 30 caracteres.</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="field">
+              <mat-label>Motor</mat-label>
+              <input
+                matInput
+                formControlName="engine"
+                maxlength="30"
+                placeholder="ABC123456"
+                spellcheck="false"
+              />
+              @if (control('engine').hasError('required') && control('engine').touched) {
+                <mat-error>El motor es obligatorio.</mat-error>
+              }
+              @if (
+                (control('engine').hasError('minlength') ||
+                  control('engine').hasError('maxlength')) &&
+                control('engine').touched
+              ) {
+                <mat-error>El motor debe tener entre 3 y 30 caracteres.</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="field">
+              <mat-label>Color</mat-label>
+              <input
+                matInput
+                formControlName="color"
+                maxlength="40"
+                placeholder="Rojo"
+                autocomplete="off"
+              />
+              @if (control('color').hasError('required') && control('color').touched) {
+                <mat-error>El color es obligatorio.</mat-error>
+              }
+              @if (
+                (control('color').hasError('minlength') ||
+                  control('color').hasError('maxlength')) &&
+                control('color').touched
+              ) {
+                <mat-error>El color debe tener entre 2 y 40 caracteres.</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="field">
+              <mat-label>Fecha de fabricacion</mat-label>
+              <input
+                matInput
+                type="date"
+                formControlName="manufactureDate"
+                (blur)="normalizeControl('manufactureDate')"
+              />
+              @if (
+                control('manufactureDate').hasError('required') &&
+                control('manufactureDate').touched
+              ) {
+                <mat-error>La fecha de fabricacion es obligatoria.</mat-error>
+              }
+              @if (
+                control('manufactureDate').hasError('dateInput') &&
+                control('manufactureDate').touched
+              ) {
+                <mat-error>Ingresa una fecha valida y no futura.</mat-error>
+              }
+            </mat-form-field>
+          </div>
+
+          <div class="status-stack">
+            @if (showOwnerReassignmentNotice()) {
+              <mat-card appearance="outlined" class="info-card info-card--warning">
+                <mat-card-content>
+                  Vas a reasignar el automotor al CUIT informado cuando guardes los cambios.
+                </mat-card-content>
+              </mat-card>
             }
-          </button>
-          <button
-            mat-flat-button
-            color="primary"
-            type="button"
-            class="action-button"
-            [disabled]="submitting()"
-            (click)="save.emit()"
-          >
-            @if (submitting()) {
-              <mat-spinner diameter="18" />
-            } @else {
-              <span>{{ submitLabel() }}</span>
+
+            @if (owner()) {
+              <mat-card
+                #ownerSummary
+                appearance="outlined"
+                class="info-card"
+                tabindex="-1"
+                role="status"
+                aria-live="polite"
+              >
+                <mat-card-content>
+                  <strong>Titular listo para usar:</strong> {{ owner()!.name }} (CUIT
+                  {{ owner()!.cuit }})
+                </mat-card-content>
+              </mat-card>
             }
-          </button>
-        </div>
-      </mat-card-actions>
+          </div>
+        </mat-card-content>
+
+        <mat-card-actions class="form-actions">
+          <p class="actions-copy">
+            Antes de guardar, confirma que el titular resuelto sea el correcto.
+          </p>
+
+          <div class="actions-group">
+            <button mat-button type="button" class="action-button" (click)="cancel.emit()">
+              Cancelar
+            </button>
+            <button
+              mat-stroked-button
+              color="primary"
+              type="button"
+              class="action-button"
+              [disabled]="ownerLookupLoading() || submitting()"
+              (click)="lookupOwner.emit()"
+            >
+              @if (ownerLookupLoading()) {
+                <mat-spinner diameter="18" />
+              } @else {
+                <span>Validar titular</span>
+              }
+            </button>
+            <button
+              mat-flat-button
+              color="primary"
+              type="submit"
+              class="action-button"
+              [disabled]="submitting() || ownerLookupLoading()"
+            >
+              @if (submitting()) {
+                <mat-spinner diameter="18" />
+              } @else {
+                <span>{{ submitLabel() }}</span>
+              }
+            </button>
+          </div>
+        </mat-card-actions>
+      </form>
     </mat-card>
   `,
   styles: `
     .form-shell {
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.92));
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.94));
       overflow: hidden;
+    }
+
+    .vehicle-form {
+      display: block;
     }
 
     .form-header {
@@ -227,8 +298,13 @@ export type VehicleFormGroup = FormGroup<{
 
     .form-content {
       display: grid;
-      gap: 1.1rem;
+      gap: 1rem;
       padding-top: 1.25rem;
+    }
+
+    .form-help {
+      color: var(--text-muted);
+      margin: 0;
     }
 
     .form-grid {
@@ -253,17 +329,23 @@ export type VehicleFormGroup = FormGroup<{
     }
 
     .error-card {
-      border-color: #dc2626;
+      background: var(--error-soft);
+      border-color: rgba(220, 38, 38, 0.22);
+    }
+
+    .feedback-title {
+      display: block;
+      margin-bottom: 0.5rem;
     }
 
     .info-card {
-      background: rgba(239, 246, 255, 0.82);
-      border-color: rgba(59, 130, 246, 0.18);
+      background: var(--success-soft);
+      border-color: rgba(14, 116, 144, 0.16);
     }
 
     .info-card--warning {
-      background: rgba(255, 247, 237, 0.9);
-      border-color: rgba(249, 115, 22, 0.18);
+      background: var(--warning-soft);
+      border-color: rgba(234, 88, 12, 0.16);
     }
 
     .error-card ul {
@@ -282,7 +364,7 @@ export type VehicleFormGroup = FormGroup<{
     }
 
     .actions-copy {
-      color: #52607a;
+      color: var(--text-muted);
       font-size: 0.92rem;
       line-height: 1.45;
       margin: 0;
@@ -328,6 +410,10 @@ export type VehicleFormGroup = FormGroup<{
   `,
 })
 export class VehicleFormComponent {
+  private readonly hostElement = inject(ElementRef<HTMLElement>);
+  private readonly errorSummary = viewChild<ElementRef<HTMLElement>>('errorSummary');
+  private readonly ownerSummary = viewChild<ElementRef<HTMLElement>>('ownerSummary');
+
   readonly title = input.required<string>();
   readonly submitLabel = input.required<string>();
   readonly form = input.required<VehicleFormGroup>();
@@ -350,18 +436,25 @@ export class VehicleFormComponent {
     return currentCuit.length > 0 && currentCuit !== originalCuit;
   });
 
-  protected control(name: keyof VehicleFormGroup['controls']) {
-    return this.form().controls[name];
+  focusErrorSummary(): void {
+    this.errorSummary()?.nativeElement?.focus();
   }
 
-  protected showLengthError(name: 'chassis' | 'engine' | 'color'): boolean {
-    const control = this.control(name);
-    return (
-      control.touched &&
-      (control.hasError('required') ||
-        control.hasError('minlength') ||
-        control.hasError('maxlength'))
+  focusResolvedOwner(): void {
+    this.ownerSummary()?.nativeElement?.focus();
+  }
+
+  focusFirstInvalidField(): void {
+    const hostElement = this.hostElement.nativeElement as HTMLElement;
+    const invalidField = hostElement.querySelector<HTMLElement>(
+      'input.ng-invalid, select.ng-invalid, textarea.ng-invalid',
     );
+
+    invalidField?.focus();
+  }
+
+  protected control(name: keyof VehicleFormGroup['controls']) {
+    return this.form().controls[name];
   }
 
   protected handleOwnerCuitBlur(): void {
