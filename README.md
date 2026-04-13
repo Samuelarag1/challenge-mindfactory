@@ -1,16 +1,21 @@
 # Challenge MindFactory
 
-Repositorio con frontend Angular y backend NestJS para la gestion de automotores.
+Repositorio con frontend Angular 21 y backend NestJS para administrar automotores y titulares.
 
-## Stack
+La base funcional ya estaba resuelta en `frontend-core`. Este estado incorpora una segunda capa de trabajo orientada a UX, accesibilidad, performance y documentacion tecnica, sin cambiar el contrato con el backend.
 
-- `frontend`: Angular 21, TypeScript, RxJS, Angular Material, Reactive Forms
-- `backend`: NestJS, TypeORM, PostgreSQL
-- `postgres`: base de datos para el backend
+## Que incluye
 
-## Levantar el proyecto
+- listado de automotores con busqueda por dominio o CUIT
+- paginacion y ordenamiento server-side
+- alta, edicion y eliminacion de automotores
+- alta inline de titular cuando el CUIT no existe
+- validaciones compartidas para dominio, CUIT y fecha
+- feedback de errores y estados vacios mas claros
+- mejoras de accesibilidad y foco para teclado
 
-### Opcion 1: Docker Compose
+## Setup rapido
+
 
 Desde la raiz:
 
@@ -18,31 +23,21 @@ Desde la raiz:
 docker compose up --build
 ```
 
-Servicios:
+Servicios esperados:
 
 - Frontend: `http://localhost:4200`
 - Backend: `http://localhost:3000/api`
 - PostgreSQL: `localhost:5432`
 
-### Opcion 2: Desarrollo local
+## Comandos utiles
 
 Backend:
 
 ```bash
 cd backend
-npm install
-npm run start:dev
+npm run test
+npm run test:e2e
 ```
-
-Frontend:
-
-```bash
-cd frontend
-npm install
-npm start
-```
-
-## Tests
 
 Frontend:
 
@@ -51,71 +46,60 @@ cd frontend
 npm test -- --watch=false
 ```
 
-## Seed inicial
+## Flujo recomendado para revisar
 
-El seed del backend es opt-in. Solo corre si `DB_SEED=true`.
+1. Abrir el listado y probar busqueda por dominio y por CUIT.
+2. Crear un automotor nuevo con un titular existente.
+3. Repetir el alta con un CUIT inexistente y crear el titular desde el dialogo.
+4. Editar el CUIT de un automotor existente y confirmar la reasignacion.
+5. Eliminar un registro y verificar paginacion y feedback.
 
-Cuando se activa, hace upsert de:
-
-- Sujetos: 10 registros demo
-- Automotores: 25 registros demo para probar paginacion, busqueda y sorting
-
-## Arquitectura frontend
-
-Se uso una estructura simple por features con componentes standalone:
+## Estructura del proyecto
 
 ```text
-frontend/src/app
-|- core
-|  |- guards
-|  |- models
-|  `- services
-|- shared
-|  |- components
-|  |- models
-|  `- validators
-`- features
-   |- automotores
-   |  |- components
-   |  |- models
-   |  |- pages
-   |  `- services
-   `- sujetos
-      |- components
-      |- models
-      `- services
+backend/
+  src/
+    automotores/
+    sujetos/
+    common/
+frontend/
+  src/app/
+    core/
+    shared/
+    features/
+      automotores/
+      sujetos/
+docs/
+  DECISION_LOG.md
+  ESCALABILIDAD_FRONT.md
+  IA_ACELERADORES.md
 ```
 
-### Criterios de implementacion
+## Decisiones tecnicas relevantes
 
-- `core/`: guard de cambios sin guardar, confirmaciones y normalizacion de errores HTTP.
-- `shared/`: validadores reutilizables, componentes de estado y dialogos compartidos.
-- `features/automotores/`: listado server-side, formulario alta/edicion y servicios REST.
-- `features/sujetos/`: lookup por CUIT y dialogo de alta para CUIT inexistente.
+- Se mantuvo arquitectura por features con componentes standalone.
+- El routing del frontend es lazy por pagina para no cargar todo el bundle de una vez.
+- Se evito incorporar NgRx porque el alcance actual no justifica un estado global mas costoso.
+- En el listado se cancela la consulta anterior cuando cambia paginacion, busqueda u orden para evitar respuestas viejas pisando el ultimo estado.
+- Se mantuvo `OnPush` y se agregaron `computed` y `trackBy` donde aportan valor concreto.
+- El formulario sigue separado entre pagina orquestadora y componente presentacional para escalar sin duplicar toda la logica de datos.
 
-## Alcance de `frontend-core`
+## Como testear
 
-El frontend implementa:
+### Automatizado
 
-- listado de automotores con busqueda por dominio o CUIT
-- ordenamiento y paginacion server-side
-- alta, edicion y eliminacion
-- validaciones reutilizables para dominio, CUIT y fecha `YYYYMM`
-- manejo de errores `422`, `404` y genericos
-- guard de navegacion por formulario dirty
-- flujo de CUIT inexistente con creacion de sujeto desde dialog
-- testing minimo obligatorio
+- `frontend`: unit tests con Vitest a traves de `ng test`
+- `backend`: tests unitarios y e2e propios del servicio
 
-## Supuestos tecnicos
+## Supuestos
 
 - El backend expone paginacion server-side mediante `page`, `limit`, `sortBy`, `sortDirection` y `search`.
 - El frontend consume la API desde `http://localhost:3000/api`.
-- El ordenamiento real se limita a los campos soportados por backend: `dominio`, `titularCuit`, `fechaFabricacion`.
-- La creacion/edicion de automotores requiere que exista un sujeto para el CUIT; si no existe, el frontend lo crea inline.
-- No se modifico backend ni se agrego manejo global de estado con NgRx.
+- Los campos ordenables se limitan a los soportados por backend.
+- La creacion o edicion de automotores requiere que el titular exista o se cree durante el flujo.
 
-## Trade-offs de esta etapa
+## Documentacion adicional
 
-- Se priorizo claridad funcional sobre refinamientos avanzados de UX y performance.
-- No hay cache de queries ni estrategia de retry; eso queda para un PR posterior.
-- La configuracion de `apiBaseUrl` es simple y orientada al entorno local del challenge.
+- [DECISION_LOG](docs/DECISION_LOG.md)
+- [ESCALABILIDAD_FRONT](docs/ESCALABILIDAD_FRONT.md)
+- [IA_ACELERADORES](docs/IA_ACELERADORES.md)

@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  afterNextRender,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -47,13 +55,20 @@ type CreateOwnerForm = FormGroup<{
     <h2 mat-dialog-title>Crear titular</h2>
 
     <mat-dialog-content>
-      <p class="dialog-copy">
-        No encontramos un sujeto para el CUIT ingresado. Puedes crearlo y seguir
-        con el alta del automotor.
+      <p id="create-owner-help" class="dialog-copy">
+        No existe un titular cargado para este CUIT. Si corresponde, puedes darlo de alta ahora y
+        seguir con el formulario.
       </p>
 
       @if (errors().length > 0) {
-        <mat-card appearance="outlined" class="error-card">
+        <mat-card
+          #errorSummary
+          appearance="outlined"
+          class="error-card"
+          tabindex="-1"
+          role="alert"
+          aria-live="assertive"
+        >
           <mat-card-content>
             <ul>
               @for (error of errors(); track error) {
@@ -67,17 +82,20 @@ type CreateOwnerForm = FormGroup<{
       <form class="dialog-form" [formGroup]="form" (ngSubmit)="save()">
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>CUIT</mat-label>
-          <input matInput formControlName="cuit" readonly />
+          <input matInput formControlName="cuit" readonly aria-readonly="true" />
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Nombre del titular</mat-label>
           <input
+            #nameInput
             matInput
             formControlName="name"
             maxlength="120"
             placeholder="Ej. Juan Perez"
+            autocomplete="name"
           />
+          <mat-hint>Usa el nombre tal como deberia verse en el listado.</mat-hint>
           @if (form.controls.name.hasError('required') && form.controls.name.touched) {
             <mat-error>El nombre es obligatorio.</mat-error>
           }
@@ -93,7 +111,7 @@ type CreateOwnerForm = FormGroup<{
 
     <mat-dialog-actions align="end">
       <button mat-button mat-dialog-close [disabled]="saving()">Cancelar</button>
-      <button mat-flat-button color="primary" (click)="save()" [disabled]="saving()">
+      <button mat-flat-button color="primary" type="button" (click)="save()" [disabled]="saving()">
         @if (saving()) {
           <mat-spinner diameter="18" />
         } @else {
@@ -104,6 +122,7 @@ type CreateOwnerForm = FormGroup<{
   `,
   styles: `
     .dialog-copy {
+      color: var(--text-muted);
       margin: 0 0 1rem;
     }
 
@@ -114,7 +133,8 @@ type CreateOwnerForm = FormGroup<{
     }
 
     .error-card {
-      border-color: #dc2626;
+      background: var(--error-soft);
+      border-color: rgba(220, 38, 38, 0.22);
       margin-bottom: 1rem;
     }
 
@@ -131,6 +151,8 @@ export class CreateOwnerDialogComponent {
   );
   private readonly ownersService = inject(OwnersService);
   private readonly apiErrorService = inject(ApiErrorService);
+  private readonly nameInput = viewChild<ElementRef<HTMLInputElement>>('nameInput');
+  private readonly errorSummary = viewChild<ElementRef<HTMLElement>>('errorSummary');
 
   readonly saving = signal(false);
   readonly errors = signal<string[]>([]);
@@ -138,17 +160,20 @@ export class CreateOwnerDialogComponent {
     cuit: new FormControl({ value: this.data.cuit, disabled: true }, { nonNullable: true }),
     name: new FormControl('', {
       nonNullable: true,
-      validators: [
-        Validators.required,
-        Validators.minLength(3),
-        Validators.maxLength(120),
-      ],
+      validators: [Validators.required, Validators.minLength(3), Validators.maxLength(120)],
     }),
   });
+
+  constructor() {
+    afterNextRender(() => {
+      this.nameInput()?.nativeElement?.focus();
+    });
+  }
 
   save(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.nameInput()?.nativeElement?.focus();
       return;
     }
 
@@ -167,11 +192,11 @@ export class CreateOwnerDialogComponent {
         next: (owner) => this.dialogRef.close(owner),
         error: (error: unknown) => {
           this.errors.set(
-            this.apiErrorService.toMessages(
-              error,
-              'No se pudo crear el titular.',
-            ),
+            this.apiErrorService.toMessages(error, 'No se pudo crear el titular.'),
           );
+          queueMicrotask(() => {
+            this.errorSummary()?.nativeElement?.focus();
+          });
         },
       });
   }

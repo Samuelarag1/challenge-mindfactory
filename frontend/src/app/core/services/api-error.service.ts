@@ -16,7 +16,9 @@ export class ApiErrorService {
     }
 
     if (error.status === 0) {
-      return ['No se pudo conectar con la API. Verifica que el backend este levantado.'];
+      return [
+        'No pudimos conectar con la API. Revisa que el backend este levantado y vuelve a intentar.',
+      ];
     }
 
     if (error.status === 422) {

@@ -381,21 +381,6 @@ Ejemplo:
 }
 ```
 
-## Compatibilidad y ruptura
-
-Este cambio rompe compatibilidad con el contrato anterior de `automotores` basado en `marca` y `modelo`.
-
-Cambios incompatibles:
-
-- `POST /api/automotores` ya no acepta `marca` ni `modelo`.
-- `PUT /api/automotores/:dominio` ya no acepta `marca` ni `modelo`.
-- `GET /api/automotores` y `GET /api/automotores/:dominio` ya no devuelven `marca` ni `modelo`.
-- `sortBy` ya no admite `marca` ni `modelo`.
-- La tabla `automotores` cambia su esquema para persistir `chasis`, `motor` y `color` en lugar de `marca` y `modelo`.
-
-El runtime ya no depende de `TypeORM synchronize` para este cambio. El backend ejecuta una migracion idempotente al iniciar y puede levantar tanto con una base nueva como con una base persistida del esquema anterior.
-
-Para filas legacy preexistentes de `automotores`, la migracion completa `chasis` y `motor` con identificadores tecnicos `LEGACY-*` y `color` con `No informado`, solo para destrabar la compatibilidad de datos viejos que no tenian esos campos en origen.
 
 ## Herramientas para verificar el proyecto
 

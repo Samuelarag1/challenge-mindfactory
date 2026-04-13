@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  computed,
   inject,
   signal,
 } from '@angular/core';
@@ -15,14 +16,18 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { PageEvent } from '@angular/material/paginator';
 import { Sort } from '@angular/material/sort';
 import { Router } from '@angular/router';
-import { EMPTY, finalize, switchMap } from 'rxjs';
+import { EMPTY, Subject, catchError, map, of, switchMap, tap } from 'rxjs';
 import { ApiErrorService } from '../../../core/services/api-error.service';
 import { ConfirmationService } from '../../../core/services/confirmation.service';
 import { StateCardComponent } from '../../../shared/components/state-card/state-card.component';
-import { VehiclesTableComponent } from '../components/automotores-table/automotores-table.component';
+import {
+  VehicleTableItem,
+  VehiclesTableComponent,
+} from '../components/automotores-table/automotores-table.component';
 import {
   Vehicle,
   VehiclesListMeta,
+  VehiclesListResponse,
   VehiclesQuery,
 } from '../models/automotor.model';
 import { VehiclesService } from '../services/automotores.service';
@@ -37,9 +42,34 @@ const DEFAULT_META: VehiclesListMeta = {
   sortDirection: 'asc',
 };
 
+type VehiclesLoadResult =
+  | {
+      kind: 'success';
+      query: VehiclesQuery;
+      response: VehiclesListResponse;
+    }
+  | {
+      kind: 'error';
+      query: VehiclesQuery;
+      error: unknown;
+    };
+
+function formatManufactureDateLabel(value: string): string {
+  const parsedDate = new Date(`${value}T00:00:00.000Z`);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return value;
+  }
+
+  const year = parsedDate.getUTCFullYear();
+  const month = String(parsedDate.getUTCMonth() + 1).padStart(2, '0');
+
+  return `${year}/${month}`;
+}
+
 @Component({
   selector: 'app-automotores-list-page',
-  standalone:true,
+  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     VehiclesTableComponent,
@@ -52,16 +82,17 @@ const DEFAULT_META: VehiclesListMeta = {
     StateCardComponent,
   ],
   template: `
-    <section class="page-shell">
+    <section class="page-shell" [attr.aria-busy]="loading()">
       <header class="page-header">
         <div class="header-copy">
           <span class="section-kicker">Gestion vehicular</span>
 
           <div class="heading-row">
-            <div>
+            <div class="heading-copy">
               <h1>Automotores</h1>
               <p>Consulta, edita y elimina automotores registrados.</p>
             </div>
+
           </div>
         </div>
 
@@ -78,14 +109,22 @@ const DEFAULT_META: VehiclesListMeta = {
 
       <mat-card appearance="outlined" class="search-card">
         <mat-card-content class="search-card-content">
-          <div class="filters">
+          <div class="filters" role="search" aria-label="Buscar automotores">
             <div class="filter-copy">
+              <p id="search-help" class="filter-support">
+                Puedes buscar por dominio o por CUIT exacto del titular.
+              </p>
+
               <mat-form-field appearance="outline" class="full-width filter-field">
                 <mat-label>Buscar por dominio o CUIT</mat-label>
                 <input
                   matInput
+                  type="search"
                   [formControl]="searchControl"
                   placeholder="Ej. AAA123 o 20123456786"
+                  spellcheck="false"
+                  autocomplete="off"
+                  aria-describedby="search-help"
                   (keyup.enter)="applySearch()"
                 />
               </mat-form-field>
@@ -97,6 +136,7 @@ const DEFAULT_META: VehiclesListMeta = {
                 color="primary"
                 type="button"
                 class="filter-button"
+                [disabled]="loading()"
                 (click)="applySearch()"
               >
                 Buscar
@@ -105,6 +145,7 @@ const DEFAULT_META: VehiclesListMeta = {
                 mat-stroked-button
                 type="button"
                 class="filter-button"
+                [disabled]="loading() || !canClearSearch()"
                 (click)="clearSearch()"
               >
                 Limpiar
@@ -115,8 +156,9 @@ const DEFAULT_META: VehiclesListMeta = {
       </mat-card>
 
       @if (errorMessages().length > 0 && items().length > 0) {
-        <mat-card appearance="outlined" class="error-banner">
+        <mat-card appearance="outlined" class="error-banner" role="alert" aria-live="assertive">
           <mat-card-content>
+            <strong>No se pudo completar la accion.</strong>
             <ul>
               @for (error of errorMessages(); track error) {
                 <li>{{ error }}</li>
@@ -131,18 +173,20 @@ const DEFAULT_META: VehiclesListMeta = {
           title="No pudimos cargar el listado"
           [message]="errorMessages().join(' ')"
           actionLabel="Reintentar"
+          tone="error"
           (action)="reload()"
         />
       } @else if (!loading() && items().length === 0) {
         <app-state-card
-          title="Sin resultados"
-          message="No encontramos automotores para la busqueda aplicada."
-          actionLabel="Crear automotor"
-          (action)="goToCreate()"
+          [title]="emptyStateTitle()"
+          [message]="emptyStateMessage()"
+          [actionLabel]="emptyStateActionLabel()"
+          tone="empty"
+          (action)="handleEmptyStateAction()"
         />
       } @else {
         <app-automotores-table
-          [items]="items()"
+          [items]="tableItems()"
           [meta]="meta()"
           [loading]="loading()"
           (pageChange)="onPageChange($event)"
@@ -171,8 +215,12 @@ const DEFAULT_META: VehiclesListMeta = {
       gap: 0.75rem;
     }
 
+    .heading-copy {
+      min-width: 0;
+    }
+
     .section-kicker {
-      color: #2563eb;
+      color: #0f766e;
       font-size: 0.78rem;
       font-weight: 800;
       letter-spacing: 0.08em;
@@ -193,31 +241,30 @@ const DEFAULT_META: VehiclesListMeta = {
     }
 
     .page-header p {
-      color: #52607a;
+      color: var(--text-muted);
       margin: 0.35rem 0 0;
       max-width: 42rem;
     }
 
     .header-stat {
       align-items: flex-start;
-      background: rgba(255, 255, 255, 0.88);
-      border: 1px solid rgba(37, 99, 235, 0.12);
-      border-radius: 18px;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+      background: rgba(255, 255, 255, 0.82);
+      border: 1px solid rgba(14, 116, 144, 0.12);
+      border-radius: 16px;
       display: grid;
       gap: 0.15rem;
-      min-width: 10.5rem;
+      min-width: 11rem;
       padding: 0.9rem 1rem;
     }
 
     .header-stat strong {
-      color: #172033;
+      color: var(--text-strong);
       font-size: 1rem;
       line-height: 1.1;
     }
 
     .header-stat span {
-      color: #64748b;
+      color: var(--text-muted);
       font-size: 0.82rem;
     }
 
@@ -235,7 +282,7 @@ const DEFAULT_META: VehiclesListMeta = {
 
     .filter-copy {
       display: grid;
-      gap: 0.5rem;
+      gap: 0.35rem;
       min-width: 0;
     }
 
@@ -244,7 +291,7 @@ const DEFAULT_META: VehiclesListMeta = {
     }
 
     .filter-support {
-      color: #64748b;
+      color: var(--text-muted);
       font-size: 0.9rem;
       line-height: 1.45;
       margin: 0;
@@ -263,15 +310,21 @@ const DEFAULT_META: VehiclesListMeta = {
     }
 
     .search-card {
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.9));
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.9));
     }
 
     .search-card-content {
-      padding: 1.4rem 1.5rem !important;
+      padding: 1.35rem 1.5rem !important;
     }
 
     .error-banner {
-      border-color: #dc2626;
+      background: var(--error-soft);
+      border-color: rgba(220, 38, 38, 0.18);
+    }
+
+    .error-banner strong {
+      display: block;
+      margin-bottom: 0.5rem;
     }
 
     .error-banner ul {
@@ -314,13 +367,56 @@ export class VehiclesListPageComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly queryChanges = new Subject<VehiclesQuery>();
 
   readonly searchControl = new FormControl('', { nonNullable: true });
   readonly items = signal<Vehicle[]>([]);
   readonly meta = signal<VehiclesListMeta>(DEFAULT_META);
   readonly loading = signal(false);
   readonly errorMessages = signal<string[]>([]);
+  readonly tableItems = computed<VehicleTableItem[]>(() =>
+    this.items().map((vehicle) => ({
+      ...vehicle,
+      manufactureDateLabel: formatManufactureDateLabel(vehicle.manufactureDate),
+    })),
+  );
+  readonly hasActiveSearch = computed(() => Boolean(this.meta().search?.trim()));
+  readonly resultCountLabel = computed(() => {
+    if (this.loading() && this.items().length === 0) {
+      return 'Cargando listado';
+    }
 
+    const total = this.meta().total;
+    return total === 1 ? '1 registro' : `${total} registros`;
+  });
+  readonly resultContextLabel = computed(() => {
+    const meta = this.meta();
+
+    if (meta.totalPages > 0) {
+      return `Pagina ${meta.page} de ${meta.totalPages}`;
+    }
+
+    if (this.hasActiveSearch()) {
+      return 'Busqueda aplicada';
+    }
+
+    return 'Sin registros cargados';
+  });
+  readonly emptyStateTitle = computed(() =>
+    this.hasActiveSearch() ? 'No hubo coincidencias' : 'Todavia no hay automotores',
+  );
+  readonly emptyStateMessage = computed(() => {
+    const search = this.meta().search?.trim();
+
+    if (search) {
+      return `No encontramos resultados para "${search}". Revisa el dominio o el CUIT e intenta de nuevo.`;
+    }
+
+    return 'Cuando registres el primer automotor, aparecera en este listado.';
+  });
+  readonly emptyStateActionLabel = computed(() =>
+    this.hasActiveSearch() ? 'Limpiar busqueda' : 'Crear automotor',
+  );
 
   private query: VehiclesQuery = {
     page: DEFAULT_META.page,
@@ -330,6 +426,58 @@ export class VehiclesListPageComponent {
   };
 
   constructor() {
+    this.queryChanges
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        tap(() => {
+          this.loading.set(true);
+          this.errorMessages.set([]);
+        }),
+        switchMap((query) =>
+          this.vehiclesService.list(query).pipe(
+            map(
+              (response): VehiclesLoadResult => ({
+                kind: 'success',
+                query,
+                response,
+              }),
+            ),
+            catchError((error: unknown) =>
+              of({
+                kind: 'error',
+                query,
+                error,
+              } satisfies VehiclesLoadResult),
+            ),
+          ),
+        ),
+      )
+      .subscribe((result) => {
+        this.loading.set(false);
+
+        if (result.kind === 'success') {
+          this.items.set(result.response.items);
+          this.meta.set(result.response.meta);
+          return;
+        }
+
+        this.items.set([]);
+        this.meta.set({
+          ...DEFAULT_META,
+          page: result.query.page,
+          limit: result.query.limit,
+          sortBy: result.query.sortBy,
+          sortDirection: result.query.sortDirection,
+          search: result.query.search ?? null,
+        });
+        this.errorMessages.set(
+          this.apiErrorService.toMessages(
+            result.error,
+            'No se pudo cargar el listado de automotores.',
+          ),
+        );
+      });
+
     this.loadVehicles();
   }
 
@@ -343,6 +491,10 @@ export class VehiclesListPageComponent {
   }
 
   clearSearch(): void {
+    if (!this.canClearSearch()) {
+      return;
+    }
+
     this.searchControl.setValue('');
     this.query = {
       ...this.query,
@@ -395,8 +547,9 @@ export class VehiclesListPageComponent {
     this.confirmationService
       .confirm({
         title: 'Eliminar automotor',
-        message: `Se eliminara el automotor ${vehicle.licensePlate}. Esta accion no se puede deshacer.`,
-        confirmLabel: 'Eliminar',
+        message: `Vas a eliminar el automotor ${vehicle.licensePlate}. Esta accion no se puede deshacer.`,
+        confirmLabel: 'Eliminar automotor',
+        cancelLabel: 'Cancelar',
       })
       .pipe(
         takeUntilDestroyed(this.destroyRef),
@@ -406,9 +559,7 @@ export class VehiclesListPageComponent {
           }
 
           this.loading.set(true);
-          return this.vehiclesService
-            .remove(vehicle.licensePlate)
-            .pipe(finalize(() => this.loading.set(false)));
+          return this.vehiclesService.remove(vehicle.licensePlate);
         }),
       )
       .subscribe({
@@ -417,12 +568,14 @@ export class VehiclesListPageComponent {
             this.query = { ...this.query, page: this.query.page - 1 };
           }
 
-          this.snackBar.open('Automotor eliminado.', 'Cerrar', {
+          this.snackBar.open(`Se elimino ${vehicle.licensePlate}.`, 'Cerrar', {
             duration: 3000,
+            politeness: 'polite',
           });
           this.loadVehicles();
         },
         error: (error: unknown) => {
+          this.loading.set(false);
           this.errorMessages.set(
             this.apiErrorService.toMessages(error, 'No se pudo eliminar el automotor.'),
           );
@@ -430,32 +583,20 @@ export class VehiclesListPageComponent {
       });
   }
 
-  private loadVehicles(): void {
-    this.loading.set(true);
-    this.errorMessages.set([]);
+  handleEmptyStateAction(): void {
+    if (this.hasActiveSearch()) {
+      this.clearSearch();
+      return;
+    }
 
-    this.vehiclesService
-      .list(this.query)
-      .pipe(finalize(() => this.loading.set(false)))
-      .subscribe({
-        next: (response) => {
-          this.items.set(response.items);
-          this.meta.set(response.meta);
-        },
-        error: (error: unknown) => {
-          this.items.set([]);
-          this.meta.set({
-            ...DEFAULT_META,
-            page: this.query.page,
-            limit: this.query.limit,
-            sortBy: this.query.sortBy,
-            sortDirection: this.query.sortDirection,
-            search: this.query.search ?? null,
-          });
-          this.errorMessages.set(
-            this.apiErrorService.toMessages(error, 'No se pudo cargar el listado de automotores.'),
-          );
-        },
-      });
+    this.goToCreate();
+  }
+
+  canClearSearch(): boolean {
+    return this.searchControl.value.trim().length > 0 || this.hasActiveSearch();
+  }
+
+  private loadVehicles(): void {
+    this.queryChanges.next({ ...this.query });
   }
 }

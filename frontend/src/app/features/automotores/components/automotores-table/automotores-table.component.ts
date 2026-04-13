@@ -7,6 +7,10 @@ import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { Vehicle, VehiclesListMeta } from '../../models/automotor.model';
 
+export interface VehicleTableItem extends Vehicle {
+  manufactureDateLabel: string;
+}
+
 @Component({
   selector: 'app-automotores-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -24,77 +28,129 @@ import { Vehicle, VehiclesListMeta } from '../../models/automotor.model';
         <mat-progress-bar mode="indeterminate" />
       }
 
-      <div class="table-wrapper">
-        <table
-          mat-table
-          [dataSource]="items()"
-          matSort
-          [matSortActive]="meta().sortBy"
-          [matSortDirection]="meta().sortDirection"
-          [matSortDisableClear]="true"
-          (matSortChange)="sortChange.emit($event)"
-        >
-          <ng-container matColumnDef="licensePlate">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header="licensePlate">Dominio</th>
-            <td mat-cell *matCellDef="let vehicle">
-              <span class="domain-pill">{{ vehicle.licensePlate }}</span>
-            </td>
-          </ng-container>
+      @if (loading() && items().length === 0) {
+        <div class="skeleton-table" aria-hidden="true">
+          @for (row of skeletonRows; track row) {
+            <div class="skeleton-row">
+              <span class="skeleton-cell skeleton-cell--short"></span>
+              <span class="skeleton-cell"></span>
+              <span class="skeleton-cell skeleton-cell--medium"></span>
+              <span class="skeleton-cell skeleton-cell--medium"></span>
+              <span class="skeleton-cell skeleton-cell--short"></span>
+            </div>
+          }
+        </div>
+        <p class="visually-hidden" aria-live="polite">Cargando automotores.</p>
+      } @else {
+        <div class="table-wrapper">
+          <table
+            id="vehicles-table"
+            mat-table
+            [dataSource]="items()"
+            [trackBy]="trackByLicensePlate"
+            matSort
+            [matSortActive]="meta().sortBy"
+            [matSortDirection]="meta().sortDirection"
+            [matSortDisableClear]="true"
+            (matSortChange)="sortChange.emit($event)"
+          >
+            <caption class="visually-hidden">
+              Listado de automotores con acciones para editar o eliminar registros.
+            </caption>
 
-          <ng-container matColumnDef="owner">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header="ownerName">Dueño</th>
-            <td mat-cell *matCellDef="let vehicle">
-              <div class="owner-block">
-                <strong class="owner-name">{{ vehicle.owner.name }}</strong>
-                <span class="owner-meta">Titular responsable</span>
-              </div>
-            </td>
-          </ng-container>
+            <ng-container matColumnDef="licensePlate">
+              <th
+                mat-header-cell
+                *matHeaderCellDef
+                mat-sort-header="licensePlate"
+                sortActionDescription="Ordenar por dominio"
+              >
+                Dominio
+              </th>
+              <td mat-cell *matCellDef="let vehicle">
+                <span class="domain-pill">{{ vehicle.licensePlate }}</span>
+              </td>
+            </ng-container>
 
-          <ng-container matColumnDef="ownerCuit">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header="ownerCuit">CUIT</th>
-            <td mat-cell *matCellDef="let vehicle">
-              <span class="mono-text">{{ vehicle.owner.cuit }}</span>
-            </td>
-          </ng-container>
+            <ng-container matColumnDef="owner">
+              <th
+                mat-header-cell
+                *matHeaderCellDef
+                mat-sort-header="ownerName"
+                sortActionDescription="Ordenar por titular"
+              >
+                Titular
+              </th>
+              <td mat-cell *matCellDef="let vehicle">
+                <div class="owner-block">
+                  <strong class="owner-name">{{ vehicle.owner.name }}</strong>
+                  <span class="owner-meta">Responsable actual</span>
+                </div>
+              </td>
+            </ng-container>
 
-          <ng-container matColumnDef="manufactureDate">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header="manufactureDate">Fabricacion</th>
-            <td mat-cell *matCellDef="let vehicle">
-              <span class="date-text">{{ formatDate(vehicle.manufactureDate) }}</span>
-            </td>
-          </ng-container>
+            <ng-container matColumnDef="ownerCuit">
+              <th
+                mat-header-cell
+                *matHeaderCellDef
+                mat-sort-header="ownerCuit"
+                sortActionDescription="Ordenar por CUIT"
+              >
+                CUIT
+              </th>
+              <td mat-cell *matCellDef="let vehicle">
+                <span class="mono-text">{{ vehicle.owner.cuit }}</span>
+              </td>
+            </ng-container>
 
-          <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef>Acciones</th>
-            <td mat-cell *matCellDef="let vehicle" class="actions-cell">
-              <div class="actions-group">
-                <button
-                  mat-stroked-button
-                  type="button"
-                  class="action-button"
-                  (click)="edit.emit(vehicle)"
-                >
-                  Editar
-                </button>
-                <button
-                  mat-button
-                  type="button"
-                  class="action-button action-button--danger"
-                  (click)="remove.emit(vehicle)"
-                >
-                  Eliminar
-                </button>
-              </div>
-            </td>
-          </ng-container>
+            <ng-container matColumnDef="manufactureDate">
+              <th
+                mat-header-cell
+                *matHeaderCellDef
+                mat-sort-header="manufactureDate"
+                sortActionDescription="Ordenar por fecha de fabricacion"
+              >
+                Fabricacion
+              </th>
+              <td mat-cell *matCellDef="let vehicle">
+                <span class="date-text">{{ vehicle.manufactureDateLabel }}</span>
+              </td>
+            </ng-container>
 
-          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
-        </table>
-      </div>
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef>Acciones</th>
+              <td mat-cell *matCellDef="let vehicle" class="actions-cell">
+                <div class="actions-group">
+                  <button
+                    mat-stroked-button
+                    type="button"
+                    class="action-button"
+                    [attr.aria-label]="'Editar automotor ' + vehicle.licensePlate"
+                    (click)="edit.emit(vehicle)"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    mat-button
+                    type="button"
+                    class="action-button action-button--danger"
+                    [attr.aria-label]="'Eliminar automotor ' + vehicle.licensePlate"
+                    (click)="remove.emit(vehicle)"
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+          </table>
+        </div>
+      }
 
       <mat-paginator
+        aria-label="Paginacion del listado de automotores"
         [length]="meta().total"
         [pageIndex]="meta().page - 1"
         [pageSize]="meta().limit"
@@ -106,6 +162,39 @@ import { Vehicle, VehiclesListMeta } from '../../models/automotor.model';
   styles: `
     .table-card {
       overflow: hidden;
+    }
+
+    .skeleton-table {
+      display: grid;
+      gap: 0.85rem;
+      padding: 1rem 1.25rem 1.1rem;
+    }
+
+    .skeleton-row {
+      display: grid;
+      gap: 0.85rem;
+      grid-template-columns: 120px minmax(160px, 1fr) 160px 130px 160px;
+    }
+
+    .skeleton-cell {
+      animation: pulse 1.2s ease-in-out infinite;
+      background: linear-gradient(
+        90deg,
+        rgba(226, 232, 240, 0.55),
+        rgba(241, 245, 249, 0.9),
+        rgba(226, 232, 240, 0.55)
+      );
+      background-size: 200% 100%;
+      border-radius: 10px;
+      height: 44px;
+    }
+
+    .skeleton-cell--short {
+      max-width: 110px;
+    }
+
+    .skeleton-cell--medium {
+      max-width: 140px;
     }
 
     .table-wrapper {
@@ -122,7 +211,7 @@ import { Vehicle, VehiclesListMeta } from '../../models/automotor.model';
 
     .table-wrapper th {
       background: rgba(248, 250, 252, 0.88);
-      color: #52607a;
+      color: var(--text-muted);
       font-size: 0.78rem;
       font-weight: 800;
       letter-spacing: 0.05em;
@@ -177,13 +266,13 @@ import { Vehicle, VehiclesListMeta } from '../../models/automotor.model';
     }
 
     .owner-name {
-      color: #172033;
+      color: var(--text-strong);
       font-size: 0.97rem;
       font-weight: 700;
     }
 
     .owner-meta {
-      color: #64748b;
+      color: var(--text-muted);
       font-size: 0.8rem;
     }
 
@@ -220,7 +309,21 @@ import { Vehicle, VehiclesListMeta } from '../../models/automotor.model';
       border-top: 1px solid rgba(226, 232, 240, 0.9);
     }
 
+    @keyframes pulse {
+      0% {
+        background-position: 0 50%;
+      }
+
+      100% {
+        background-position: 100% 50%;
+      }
+    }
+
     @media (max-width: 720px) {
+      .skeleton-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
       .table-wrapper {
         padding-inline: 0.35rem;
       }
@@ -228,7 +331,7 @@ import { Vehicle, VehiclesListMeta } from '../../models/automotor.model';
   `,
 })
 export class VehiclesTableComponent {
-  readonly items = input.required<Vehicle[]>();
+  readonly items = input.required<VehicleTableItem[]>();
   readonly meta = input.required<VehiclesListMeta>();
   readonly loading = input(false);
   readonly pageChange = output<PageEvent>();
@@ -244,23 +347,8 @@ export class VehiclesTableComponent {
     'actions',
   ];
   protected readonly pageSizeOptions = [5, 10, 20, 50];
-  private readonly dateFormatter = new Intl.DateTimeFormat('es-AR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    timeZone: 'UTC',
-  });
+  protected readonly skeletonRows = [1, 2, 3, 4, 5];
 
-  protected formatDate(value: string): string {
-    const parsedDate = new Date(`${value}T00:00:00.000Z`);
-
-    if (Number.isNaN(parsedDate.getTime())) {
-      return value;
-    }
-
-    const year = parsedDate.getUTCFullYear();
-    const month = String(parsedDate.getUTCMonth() + 1).padStart(2, '0');
-
-    return `${year}/${month}`;
-  }
+  protected readonly trackByLicensePlate = (_index: number, vehicle: Vehicle): string =>
+    vehicle.licensePlate;
 }

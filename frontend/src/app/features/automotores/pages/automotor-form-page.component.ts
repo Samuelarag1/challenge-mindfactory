@@ -6,11 +6,11 @@ import {
   computed,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Observable, catchError, finalize, map, of, switchMap, tap } from 'rxjs';
@@ -18,8 +18,14 @@ import { PendingChangesComponent } from '../../../core/guards/pending-changes.gu
 import { ApiErrorService } from '../../../core/services/api-error.service';
 import { StateCardComponent } from '../../../shared/components/state-card/state-card.component';
 import { cuitValidator, normalizeCuit } from '../../../shared/validators/cuit.validator';
-import { licensePlateValidator, normalizeLicensePlate } from '../../../shared/validators/dominio.validator';
-import { dateInputValidator, normalizeDateInput } from '../../../shared/validators/yyyymm.validator';
+import {
+  licensePlateValidator,
+  normalizeLicensePlate,
+} from '../../../shared/validators/dominio.validator';
+import {
+  dateInputValidator,
+  normalizeDateInput,
+} from '../../../shared/validators/yyyymm.validator';
 import { CreateOwnerDialogComponent } from '../../sujetos/components/create-sujeto-dialog/create-sujeto-dialog.component';
 import { Owner } from '../../sujetos/models/sujeto.model';
 import { OwnersService } from '../../sujetos/services/sujetos.service';
@@ -45,24 +51,29 @@ const VEHICLE_FORM_FIELDS: Array<keyof VehicleFormValue> = [
 @Component({
   selector: 'app-automotor-form-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    VehicleFormComponent,
-    MatProgressSpinnerModule,
-    MatSnackBarModule,
-    ReactiveFormsModule,
-    StateCardComponent,
-  ],
+  imports: [VehicleFormComponent, MatSnackBarModule, StateCardComponent],
   template: `
     <section class="page-shell">
       @if (loadingInitialData()) {
-        <div class="centered-state">
-          <mat-spinner />
+        <div class="form-skeleton" aria-hidden="true">
+          <div class="skeleton-block skeleton-block--title"></div>
+          <div class="skeleton-grid">
+            @for (row of skeletonRows; track row) {
+              <div class="skeleton-block"></div>
+            }
+          </div>
+          <div class="skeleton-actions">
+            <div class="skeleton-block skeleton-block--button"></div>
+            <div class="skeleton-block skeleton-block--button"></div>
+          </div>
         </div>
+        <p class="visually-hidden" aria-live="polite">Cargando datos del automotor.</p>
       } @else if (loadErrors().length > 0) {
         <app-state-card
           title="No pudimos cargar el automotor"
           [message]="loadErrors().join(' ')"
           actionLabel="Volver al listado"
+          tone="error"
           (action)="cancel()"
         />
       } @else {
@@ -83,15 +94,77 @@ const VEHICLE_FORM_FIELDS: Array<keyof VehicleFormValue> = [
     </section>
   `,
   styles: `
-    .centered-state {
-      display: grid;
-      min-height: 320px;
-      place-items: center;
-    }
-
     .page-shell {
       display: grid;
       gap: 1rem;
+    }
+
+    .form-skeleton {
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      border-radius: 18px;
+      display: grid;
+      gap: 1rem;
+      padding: 1.5rem;
+    }
+
+    .skeleton-grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .skeleton-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: flex-end;
+    }
+
+    .skeleton-block {
+      animation: pulse 1.2s ease-in-out infinite;
+      background: linear-gradient(
+        90deg,
+        rgba(226, 232, 240, 0.55),
+        rgba(241, 245, 249, 0.9),
+        rgba(226, 232, 240, 0.55)
+      );
+      background-size: 200% 100%;
+      border-radius: 12px;
+      height: 56px;
+    }
+
+    .skeleton-block--title {
+      height: 70px;
+      max-width: 340px;
+    }
+
+    .skeleton-block--button {
+      height: 42px;
+      width: 170px;
+    }
+
+    @keyframes pulse {
+      0% {
+        background-position: 0 50%;
+      }
+
+      100% {
+        background-position: 100% 50%;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .skeleton-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .skeleton-actions {
+        flex-direction: column;
+      }
+
+      .skeleton-block--button {
+        width: 100%;
+      }
     }
   `,
 })
@@ -104,6 +177,7 @@ export class VehicleFormPageComponent implements PendingChangesComponent {
   private readonly dialog = inject(MatDialog);
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly vehicleFormComponent = viewChild(VehicleFormComponent);
 
   readonly loadingInitialData = signal(false);
   readonly ownerLookupLoading = signal(false);
@@ -112,6 +186,7 @@ export class VehicleFormPageComponent implements PendingChangesComponent {
   readonly loadErrors = signal<string[]>([]);
   readonly owner = signal<Owner | null>(null);
   readonly originalOwnerCuit = signal<string | null>(null);
+  readonly skeletonRows = [1, 2, 3, 4, 5, 6];
 
   readonly mode: FormMode = this.activatedRoute.snapshot.paramMap.has('licensePlate')
     ? 'edit'
@@ -121,7 +196,7 @@ export class VehicleFormPageComponent implements PendingChangesComponent {
     this.mode === 'edit' ? 'Editar automotor' : 'Crear automotor',
   );
   readonly submitLabel = computed(() =>
-    this.mode === 'edit' ? 'Guardar cambios' : 'Crear automotor',
+    this.mode === 'edit' ? 'Guardar cambios' : 'Guardar automotor',
   );
 
   readonly form: VehicleFormGroup = new FormGroup({
@@ -163,6 +238,7 @@ export class VehicleFormPageComponent implements PendingChangesComponent {
 
         if (normalized !== this.lastResolvedOwnerCuit) {
           this.owner.set(null);
+          this.lastResolvedOwnerCuit = null;
         }
       });
 
@@ -190,34 +266,47 @@ export class VehicleFormPageComponent implements PendingChangesComponent {
   }
 
   resolveOwner(): void {
+    if (this.ownerLookupLoading() || this.submitting()) {
+      return;
+    }
+
     const ownerCuitControl = this.form.controls.ownerCuit;
     ownerCuitControl.markAsTouched();
     ownerCuitControl.updateValueAndValidity();
 
     if (ownerCuitControl.invalid) {
-      this.formErrors.set(['Ingresa un CUIT valido antes de buscar el titular.']);
+      this.setFormErrors(['Revisa el CUIT antes de validar el titular.']);
+      this.focusFirstInvalidField();
       return;
     }
 
-    this.ensureOwnerAvailable().subscribe();
+    this.ensureOwnerAvailable(true)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe();
   }
 
   save(): void {
+    if (this.submitting()) {
+      return;
+    }
+
     this.normalizeAllFields();
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.setFormErrors(['Hay campos pendientes o invalidos. Revisa los datos marcados.']);
+      this.focusFirstInvalidField();
       return;
     }
 
     this.formErrors.set([]);
     this.submitting.set(true);
 
-    this.ensureOwnerAvailable()
+    this.ensureOwnerAvailable(false)
       .pipe(
         switchMap((owner) => {
           if (!owner) {
-            this.formErrors.set([
+            this.setFormErrors([
               'Debes contar con un titular valido antes de guardar el automotor.',
             ]);
             return of(null);
@@ -243,6 +332,7 @@ export class VehicleFormPageComponent implements PendingChangesComponent {
           return this.vehiclesService.create(createPayload);
         }),
         finalize(() => this.submitting.set(false)),
+        takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
         next: (result) => {
@@ -254,14 +344,19 @@ export class VehicleFormPageComponent implements PendingChangesComponent {
           this.syncInitialFormValue();
           this.form.markAsPristine();
           this.snackBar.open(
-            this.mode === 'edit' ? 'Automotor actualizado.' : 'Automotor creado.',
+            this.mode === 'edit'
+              ? `Cambios guardados para ${result.licensePlate}.`
+              : `Automotor ${result.licensePlate} creado.`,
             'Cerrar',
-            { duration: 3000 },
+            {
+              duration: 3000,
+              politeness: 'polite',
+            },
           );
           void this.router.navigate(['/vehicles']);
         },
         error: (error: unknown) => {
-          this.formErrors.set(
+          this.setFormErrors(
             this.apiErrorService.toMessages(error, 'No se pudo guardar el automotor.'),
           );
         },
@@ -274,7 +369,7 @@ export class VehicleFormPageComponent implements PendingChangesComponent {
 
     this.vehiclesService
       .findByLicensePlate(licensePlate)
-      .pipe(finalize(() => this.loadingInitialData.set(false)))
+      .pipe(finalize(() => this.loadingInitialData.set(false)), takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (vehicle) => {
           this.form.patchValue({
@@ -299,7 +394,7 @@ export class VehicleFormPageComponent implements PendingChangesComponent {
       });
   }
 
-  private ensureOwnerAvailable(): Observable<Owner | null> {
+  private ensureOwnerAvailable(focusSummary: boolean): Observable<Owner | null> {
     const ownerCuitControl = this.form.controls.ownerCuit;
     const normalizedCuit = normalizeCuit(ownerCuitControl.value);
 
@@ -308,6 +403,10 @@ export class VehicleFormPageComponent implements PendingChangesComponent {
     }
 
     if (this.lastResolvedOwnerCuit === normalizedCuit && this.owner()) {
+      if (focusSummary) {
+        this.focusResolvedOwner();
+      }
+
       return of(this.owner());
     }
 
@@ -315,20 +414,25 @@ export class VehicleFormPageComponent implements PendingChangesComponent {
     this.formErrors.set([]);
 
     return this.ownersService.findByCuit(normalizedCuit).pipe(
-      tap((owner) => this.setResolvedOwner(owner)),
+      tap((owner) => this.setResolvedOwner(owner, focusSummary)),
       map((owner) => owner),
       catchError((error: unknown) => {
         if (this.apiErrorService.isNotFound(error)) {
           return this.openCreateOwnerDialog(normalizedCuit).pipe(
             tap((owner) => {
               if (owner) {
-                this.setResolvedOwner(owner);
+                this.setResolvedOwner(owner, true);
+                return;
               }
+
+              this.setFormErrors([
+                'No existe un titular para ese CUIT. Puedes crearlo desde el dialogo o corregir el dato antes de guardar.',
+              ]);
             }),
           );
         }
 
-        this.formErrors.set(
+        this.setFormErrors(
           this.apiErrorService.toMessages(error, 'No se pudo validar el titular.'),
         );
         return of(null);
@@ -341,16 +445,23 @@ export class VehicleFormPageComponent implements PendingChangesComponent {
     return this.dialog
       .open(CreateOwnerDialogComponent, {
         width: '480px',
+        autoFocus: false,
+        restoreFocus: true,
         data: { cuit },
       })
       .afterClosed()
       .pipe(map((result) => result ?? null));
   }
 
-  private setResolvedOwner(owner: Owner): void {
+  private setResolvedOwner(owner: Owner, focusSummary = false): void {
     this.owner.set(owner);
     this.lastResolvedOwnerCuit = owner.cuit;
+    this.formErrors.set([]);
     this.form.controls.ownerCuit.setValue(owner.cuit, { emitEvent: false });
+
+    if (focusSummary) {
+      this.focusResolvedOwner();
+    }
   }
 
   private normalizeAllFields(): void {
@@ -386,5 +497,25 @@ export class VehicleFormPageComponent implements PendingChangesComponent {
   private toUpdatePayload(payload: VehicleUpsertPayload): VehicleUpdatePayload {
     const { licensePlate: _licensePlate, ...updatePayload } = payload;
     return updatePayload;
+  }
+
+  private setFormErrors(messages: string[]): void {
+    this.formErrors.set(messages);
+
+    queueMicrotask(() => {
+      this.vehicleFormComponent()?.focusErrorSummary();
+    });
+  }
+
+  private focusFirstInvalidField(): void {
+    queueMicrotask(() => {
+      this.vehicleFormComponent()?.focusFirstInvalidField();
+    });
+  }
+
+  private focusResolvedOwner(): void {
+    queueMicrotask(() => {
+      this.vehicleFormComponent()?.focusResolvedOwner();
+    });
   }
 }

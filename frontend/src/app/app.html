@@ -1,6 +1,12 @@
+<a class="skip-link" href="#main-content">Saltar al contenido</a>
+
 <div class="app-shell">
   <mat-toolbar class="app-toolbar">
     <div class="brand-block">
+      <a class="app-title" routerLink="/vehicles">Registro automotor</a>
+    </div>
+
+    <nav class="toolbar-actions" aria-label="Navegacion principal">
       <button
         mat-stroked-button
         routerLink="/vehicles"
@@ -10,16 +16,18 @@
       >
         Listado
       </button>
-    </div>
-
-    <nav class="toolbar-actions">
-      <button mat-flat-button routerLink="/vehicles/new" routerLinkActive="is-active" type="button">
+      <button
+        mat-flat-button
+        routerLink="/vehicles/new"
+        routerLinkActive="is-active"
+        type="button"
+      >
         Nuevo automotor
       </button>
     </nav>
   </mat-toolbar>
 
-  <main class="app-content">
+  <main id="main-content" class="app-content" tabindex="-1">
     <router-outlet />
   </main>
 </div>
