@@ -1,15 +1,15 @@
 export class VehicleOwnerResponseDto {
   cuit!: string;
-  name!: string;
+  nombre!: string;
 }
 
 export class VehicleResponseDto {
-  licensePlate!: string;
-  chassis!: string;
-  engine!: string;
+  dominio!: string;
+  chasis!: string;
+  motor!: string;
   color!: string;
-  manufactureDate!: string;
-  owner!: VehicleOwnerResponseDto | null;
+  fechaFabricacion!: string;
+  titular!: VehicleOwnerResponseDto | null;
 }
 
 export class VehiclesListMetaDto {

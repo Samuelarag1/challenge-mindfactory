@@ -5,15 +5,15 @@ import { DataType, newDb } from 'pg-mem';
 import request from 'supertest';
 import { DataSource, DataSourceOptions, Repository } from 'typeorm';
 import type {
-  AutomotorResponseDto,
-  ListAutomotoresResponseDto,
+  VehicleResponseDto,
+  ListVehiclesResponseDto,
 } from '../src/automotores/dto/automotor-response.dto';
-import { AutomotoresModule } from '../src/automotores/automotores.module';
-import { AutomotorEntity } from '../src/automotores/entities/automotor.entity';
+import { VehiclesModule } from '../src/automotores/automotores.module';
+import { VehicleEntity } from '../src/automotores/entities/automotor.entity';
 import { ApiExceptionFilter } from '../src/common/filters/api-exception.filter';
 import { validationExceptionFactory } from '../src/common/validation/validation-exception.factory';
-import { SujetosModule } from '../src/sujetos/sujetos.module';
-import { SujetoEntity } from '../src/sujetos/entities/sujeto.entity';
+import { OwnersModule } from '../src/sujetos/sujetos.module';
+import { OwnerEntity } from '../src/sujetos/entities/sujeto.entity';
 
 type SupertestServer = Parameters<typeof request>[0];
 
@@ -72,8 +72,8 @@ jest.setTimeout(15000);
         return dataSource;
       },
     }),
-    SujetosModule,
-    AutomotoresModule,
+    OwnersModule,
+    VehiclesModule,
   ],
 })
 class TestAppModule {}
@@ -103,11 +103,11 @@ async function createTestingApp() {
   return {
     app,
     httpServer: app.getHttpServer() as SupertestServer,
-    sujetosRepository: moduleFixture.get<Repository<SujetoEntity>>(
-      getRepositoryToken(SujetoEntity),
+    sujetosRepository: moduleFixture.get<Repository<OwnerEntity>>(
+      getRepositoryToken(OwnerEntity),
     ),
-    automotoresRepository: moduleFixture.get<Repository<AutomotorEntity>>(
-      getRepositoryToken(AutomotorEntity),
+    automotoresRepository: moduleFixture.get<Repository<VehicleEntity>>(
+      getRepositoryToken(VehicleEntity),
     ),
   };
 }
@@ -125,8 +125,8 @@ function getFutureFechaFabricacion() {
 describe('Backend e2e', () => {
   let app: INestApplication;
   let httpServer: SupertestServer;
-  let sujetosRepository: Repository<SujetoEntity>;
-  let automotoresRepository: Repository<AutomotorEntity>;
+  let sujetosRepository: Repository<OwnerEntity>;
+  let automotoresRepository: Repository<VehicleEntity>;
 
   beforeEach(async () => {
     ({ app, httpServer, sujetosRepository, automotoresRepository } =
@@ -170,7 +170,7 @@ describe('Backend e2e', () => {
     });
 
     expect(response.status).toBe(201);
-    expect(response.body as AutomotorResponseDto).toEqual({
+    expect(response.body as VehicleResponseDto).toEqual({
       dominio: 'AA123AA',
       chasis: '8AFZZZ54ZMJ123456',
       motor: 'ABC123456',
@@ -201,7 +201,7 @@ describe('Backend e2e', () => {
     const response = await request(httpServer).get('/api/automotores/aa123aa');
 
     expect(response.status).toBe(200);
-    expect(response.body as AutomotorResponseDto).toEqual({
+    expect(response.body as VehicleResponseDto).toEqual({
       dominio: 'AA123AA',
       chasis: '8AFZZZ54ZMJ123456',
       motor: 'ABC123456',
@@ -246,7 +246,7 @@ describe('Backend e2e', () => {
       });
 
     expect(response.status).toBe(200);
-    expect(response.body as AutomotorResponseDto).toEqual({
+    expect(response.body as VehicleResponseDto).toEqual({
       dominio: 'AA123AA',
       chasis: '8AFZZZ54ZMJ123456',
       motor: 'XYZ987654',
@@ -303,7 +303,7 @@ describe('Backend e2e', () => {
     );
 
     expect(response.status).toBe(200);
-    expect(response.body as ListAutomotoresResponseDto).toEqual({
+    expect(response.body as ListVehiclesResponseDto).toEqual({
       items: [
         {
           dominio: 'AB123CD',
@@ -325,6 +325,87 @@ describe('Backend e2e', () => {
         search: '20-12345678-6',
         sortBy: 'fechaFabricacion',
         sortDirection: 'desc',
+      },
+    });
+  });
+
+  it('GET /api/automotores permite buscar por nombre del titular', async () => {
+    await sujetosRepository.save([
+      {
+        cuit: '20123456786',
+        nombre: 'Juan Perez',
+      },
+      {
+        cuit: '27234567891',
+        nombre: 'Maria Gomez',
+      },
+    ]);
+
+    await automotoresRepository.save([
+      {
+        dominio: 'AAA123',
+        chasis: '8AFZZZ54ZMJ000001',
+        motor: 'MTR000001',
+        color: 'Negro',
+        fechaFabricacion: '201806',
+        titularCuit: '20123456786',
+      },
+      {
+        dominio: 'AB123CD',
+        chasis: '8AFZZZ54ZMJ000002',
+        motor: 'MTR000002',
+        color: 'Blanco',
+        fechaFabricacion: '202112',
+        titularCuit: '20123456786',
+      },
+      {
+        dominio: 'AC456EF',
+        chasis: '8AFZZZ54ZMJ000003',
+        motor: 'MTR000003',
+        color: 'Gris',
+        fechaFabricacion: '202001',
+        titularCuit: '27234567891',
+      },
+    ]);
+
+    const response = await request(httpServer).get(
+      '/api/automotores?search=juan%20perez&sortBy=dominio&sortDirection=asc&limit=10&page=1',
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.body as ListVehiclesResponseDto).toEqual({
+      items: [
+        {
+          dominio: 'AAA123',
+          chasis: '8AFZZZ54ZMJ000001',
+          motor: 'MTR000001',
+          color: 'Negro',
+          fechaFabricacion: '201806',
+          titular: {
+            cuit: '20123456786',
+            nombre: 'Juan Perez',
+          },
+        },
+        {
+          dominio: 'AB123CD',
+          chasis: '8AFZZZ54ZMJ000002',
+          motor: 'MTR000002',
+          color: 'Blanco',
+          fechaFabricacion: '202112',
+          titular: {
+            cuit: '20123456786',
+            nombre: 'Juan Perez',
+          },
+        },
+      ],
+      meta: {
+        page: 1,
+        limit: 10,
+        total: 2,
+        totalPages: 1,
+        search: 'juan perez',
+        sortBy: 'dominio',
+        sortDirection: 'asc',
       },
     });
   });

@@ -1,6 +1,9 @@
 import { Routes } from '@angular/router';
 import { pendingChangesGuard } from './core/guards/pending-changes.guard';
 
+
+
+// Mejora del rendimiento y lazy loading. canDeactivate es para preguntarle al guard si puede salir de la pagina
 export const routes: Routes = [
   {
     path: '',

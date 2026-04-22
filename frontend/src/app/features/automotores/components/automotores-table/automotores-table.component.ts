@@ -62,7 +62,7 @@ export interface VehicleTableItem extends Vehicle {
               <th
                 mat-header-cell
                 *matHeaderCellDef
-                mat-sort-header="licensePlate"
+                mat-sort-header="dominio"
                 sortActionDescription="Ordenar por dominio"
               >
                 Dominio
@@ -76,7 +76,7 @@ export interface VehicleTableItem extends Vehicle {
               <th
                 mat-header-cell
                 *matHeaderCellDef
-                mat-sort-header="ownerName"
+                mat-sort-header="titularNombre"
                 sortActionDescription="Ordenar por titular"
               >
                 Titular
@@ -93,7 +93,7 @@ export interface VehicleTableItem extends Vehicle {
               <th
                 mat-header-cell
                 *matHeaderCellDef
-                mat-sort-header="ownerCuit"
+                mat-sort-header="titularCuit"
                 sortActionDescription="Ordenar por CUIT"
               >
                 CUIT
@@ -103,11 +103,25 @@ export interface VehicleTableItem extends Vehicle {
               </td>
             </ng-container>
 
+            <ng-container matColumnDef="newColumn">
+              <th
+                mat-header-cell
+                *matHeaderCellDef
+                mat-sort-header="fechaFabricacion"
+                sortActionDescription="Ordenar por fecha de fabricacion"
+              >
+                Fabricacion
+              </th>
+              <td mat-cell *matCellDef="let vehicle">
+                <!-- <span class="date-text">{{ vehicle.manufactureDateLabel }}</span> -->
+                 <span>No hay dato porque es una new column que me va a venir del backend</span>
+              </td>
+            </ng-container>
             <ng-container matColumnDef="manufactureDate">
               <th
                 mat-header-cell
                 *matHeaderCellDef
-                mat-sort-header="manufactureDate"
+                mat-sort-header="fechaFabricacion"
                 sortActionDescription="Ordenar por fecha de fabricacion"
               >
                 Fabricacion
@@ -345,6 +359,7 @@ export class VehiclesTableComponent {
     'ownerCuit',
     'manufactureDate',
     'actions',
+    'newColumn'
   ];
   protected readonly pageSizeOptions = [5, 10, 20, 50];
   protected readonly skeletonRows = [1, 2, 3, 4, 5];

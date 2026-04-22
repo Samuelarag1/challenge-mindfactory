@@ -27,155 +27,77 @@ export class VehiclesService {
     private readonly ownersRepository: Repository<OwnerEntity>,
   ) {}
 
-  // async findAll(query: ListVehiclesQueryDto): Promise<ListVehiclesResponseDto> {
-  //   const builder = this.vehiclesRepository
-  //     .createQueryBuilder('vehicle')
-  //     .leftJoinAndSelect('vehicle.owner', 'owner');
-
-  //   const licensePlateSearch = query.normalizedLicensePlateSearch;
-  //   const cuitSearch = query.normalizedCuitSearch;
-
-  //   if (licensePlateSearch || cuitSearch) {
-  //     builder.andWhere(
-  //       new Brackets((where) => {
-  //         if (licensePlateSearch) {
-  //           where.orWhere('vehicle.dominio ILIKE :licensePlate', {
-  //             licensePlate: `%${licensePlateSearch}%`,
-  //           });
-  //         }
-
-  //         if (cuitSearch) {
-  //           where.orWhere('vehicle.titular_cuit LIKE :cuit', {
-  //             cuit: `%${cuitSearch}%`,
-  //           });
-  //         }
-  //       }),
-  //     );
-  //   }
-
-  //   const sortMap: Record<VehicleSortField, string> = {
-  //     licensePlate: 'vehicle.dominio',
-  //     chassis: 'vehicle.chasis',
-  //     color: 'vehicle.color',
-  //     manufactureDate: 'vehicle.fecha_fabricacion',
-  //     ownerCuit: 'vehicle.titular_cuit',
-  //     ownerName: 'owner.nombre',
-  //   };
-
-  //   builder
-  //     .orderBy(
-  //       sortMap[query.sortBy],
-  //       query.sortDirection.toUpperCase() as 'ASC' | 'DESC',
-  //     )
-  //     .skip((query.page - 1) * query.limit)
-  //     .take(query.limit);
-
-  //   const [items, total] = await builder.getManyAndCount();
-
-  //   return {
-  //     items: items.map((item) => this.toResponse(item)),
-  //     meta: {
-  //       page: query.page,
-  //       limit: query.limit,
-  //       total,
-  //       totalPages: total === 0 ? 0 : Math.ceil(total / query.limit),
-  //       search: query.search ?? null,
-  //       sortBy: query.sortBy,
-  //       sortDirection: query.sortDirection,
-  //     },
-  //   };
-  // }
   async findAll(query: ListVehiclesQueryDto): Promise<ListVehiclesResponseDto> {
-    try {
-      console.log('QUERY', query);
+    const builder = this.vehiclesRepository
+      .createQueryBuilder('vehicle')
+      .leftJoinAndSelect('vehicle.titular', 'owner');
 
-      const builder = this.vehiclesRepository
-        .createQueryBuilder('vehicle')
-        .leftJoinAndSelect('vehicle.owner', 'owner');
+    const licensePlateSearch = query.normalizedLicensePlateSearch;
+    const cuitSearch = query.normalizedCuitSearch;
+    const ownerNameSearch = query.normalizedOwnerNameSearch;
 
-      const licensePlateSearch = query.normalizedLicensePlateSearch;
-      const cuitSearch = query.normalizedCuitSearch;
+    if (licensePlateSearch || cuitSearch || ownerNameSearch) {
+      builder.andWhere(
+        new Brackets((where) => {
+          if (licensePlateSearch) {
+            where.orWhere('UPPER(vehicle.dominio) LIKE :licensePlate', {
+              licensePlate: `%${licensePlateSearch.toUpperCase()}%`,
+            });
+          }
 
-      console.log('SEARCHES', { licensePlateSearch, cuitSearch });
+          if (cuitSearch) {
+            where.orWhere('vehicle.titular_cuit LIKE :cuit', {
+              cuit: `%${cuitSearch}%`,
+            });
+          }
 
-      if (licensePlateSearch || cuitSearch) {
-        builder.andWhere(
-          new Brackets((where) => {
-            if (licensePlateSearch) {
-              where.orWhere('vehicle.dominio ILIKE :licensePlate', {
-                licensePlate: `%${licensePlateSearch}%`,
-              });
-            }
+          if (ownerNameSearch) {
+            where.orWhere('UPPER(owner.nombre) LIKE :ownerName', {
+              ownerName: `%${ownerNameSearch.toUpperCase()}%`,
+            });
+          }
+        }),
+      );
+    }
 
-            if (cuitSearch) {
-              where.orWhere('vehicle.titular_cuit LIKE :cuit', {
-                cuit: `%${cuitSearch}%`,
-              });
-            }
-          }),
-        );
-      }
+    const sortMap: Record<VehicleSortField, string> = {
+      dominio: 'vehicle.dominio',
+      chasis: 'vehicle.chasis',
+      color: 'vehicle.color',
+      fechaFabricacion: 'vehicle.fechaFabricacion',
+      titularCuit: 'vehicle.titularCuit',
+      titularNombre: 'owner.nombre',
+    };
 
-      const sortMap: Record<VehicleSortField, string> = {
-        licensePlate: 'vehicle.licensePlate',
-        chassis: 'vehicle.chassis',
-        color: 'vehicle.color',
-        manufactureDate: 'vehicle.manufactureDate',
-        ownerCuit: 'vehicle.ownerCuit',
-        ownerName: 'owner.name',
-      };
+    builder
+      .orderBy(
+        sortMap[query.sortBy],
+        query.sortDirection.toUpperCase() as 'ASC' | 'DESC',
+      )
+      .skip((query.page - 1) * query.limit)
+      .take(query.limit);
 
-      console.log('ORDER BY', {
+    const [items, total] = await builder.getManyAndCount();
+
+    return {
+      items: items.map((item) => this.toResponse(item)),
+      meta: {
+        page: query.page,
+        limit: query.limit,
+        total,
+        totalPages: total === 0 ? 0 : Math.ceil(total / query.limit),
+        search: query.search ?? null,
         sortBy: query.sortBy,
         sortDirection: query.sortDirection,
-        mapped: sortMap[query.sortBy],
-      });
-
-      builder
-        .orderBy(
-          sortMap[query.sortBy],
-          query.sortDirection.toUpperCase() as 'ASC' | 'DESC',
-        )
-        .skip((query.page - 1) * query.limit)
-        .take(query.limit);
-
-      console.log('SQL', builder.getSql());
-      console.log('PARAMS', builder.getParameters());
-
-      const [items, total] = await builder.getManyAndCount();
-
-      console.log(
-        'ITEMS',
-        items.map((item) => ({
-          licensePlate: item.licensePlate,
-          ownerCuit: item.ownerCuit,
-          owner: item.owner,
-        })),
-      );
-
-      return {
-        items: items.map((item) => this.toResponse(item)),
-        meta: {
-          page: query.page,
-          limit: query.limit,
-          total,
-          totalPages: total === 0 ? 0 : Math.ceil(total / query.limit),
-          search: query.search ?? null,
-          sortBy: query.sortBy,
-          sortDirection: query.sortDirection,
-        },
-      };
-    } catch (error) {
-      console.error('Vehicles findAll error:', error);
-      throw error;
-    }
+      },
+    };
   }
   async findOneByLicensePlate(
     licensePlate: string,
   ): Promise<VehicleResponseDto> {
     const vehicle = await this.vehiclesRepository.findOne({
-      where: { licensePlate },
-      relations: { owner: true },
+      where: { dominio: licensePlate },
+      relations: { titular: true },
     });
 
     if (!vehicle) {
@@ -188,23 +110,23 @@ export class VehiclesService {
   }
 
   async create(payload: CreateVehicleDto): Promise<VehicleResponseDto> {
-    await this.ensureLicensePlateAvailable(payload.licensePlate);
+    await this.ensureLicensePlateAvailable(payload.dominio);
 
-    const owner = await this.ensureOwnerExists(payload.ownerCuit);
+    const owner = await this.ensureOwnerExists(payload.titularCuit);
 
     const vehicle = this.vehiclesRepository.create({
-      licensePlate: payload.licensePlate,
-      chassis: payload.chassis,
-      engine: payload.engine,
+      dominio: payload.dominio,
+      chasis: payload.chasis,
+      motor: payload.motor,
       color: payload.color,
-      manufactureDate: payload.manufactureDate,
-      ownerCuit: owner.cuit,
-      owner,
+      fechaFabricacion: payload.fechaFabricacion,
+      titularCuit: owner.cuit,
+      titular: owner,
     });
 
     await this.vehiclesRepository.save(vehicle);
 
-    return this.findOneByLicensePlate(vehicle.licensePlate);
+    return this.findOneByLicensePlate(vehicle.dominio);
   }
 
   async update(
@@ -212,8 +134,8 @@ export class VehiclesService {
     payload: UpdateVehicleDto,
   ): Promise<VehicleResponseDto> {
     const vehicle = await this.vehiclesRepository.findOne({
-      where: { licensePlate },
-      relations: { owner: true },
+      where: { dominio: licensePlate },
+      relations: { titular: true },
     });
 
     if (!vehicle) {
@@ -222,22 +144,22 @@ export class VehiclesService {
       );
     }
 
-    const owner = await this.ensureOwnerExists(payload.ownerCuit);
+    const owner = await this.ensureOwnerExists(payload.titularCuit);
 
-    vehicle.chassis = payload.chassis;
-    vehicle.engine = payload.engine;
+    vehicle.chasis = payload.chasis;
+    vehicle.motor = payload.motor;
     vehicle.color = payload.color;
-    vehicle.manufactureDate = payload.manufactureDate;
-    vehicle.ownerCuit = owner.cuit;
-    vehicle.owner = owner;
+    vehicle.fechaFabricacion = payload.fechaFabricacion;
+    vehicle.titularCuit = owner.cuit;
+    vehicle.titular = owner;
 
     await this.vehiclesRepository.save(vehicle);
 
-    return this.findOneByLicensePlate(vehicle.licensePlate);
+    return this.findOneByLicensePlate(vehicle.dominio);
   }
 
   async remove(licensePlate: string) {
-    const vehicle = await this.vehiclesRepository.findOneBy({ licensePlate });
+    const vehicle = await this.vehiclesRepository.findOneBy({ dominio: licensePlate });
 
     if (!vehicle) {
       throw new NotFoundException(
@@ -249,7 +171,7 @@ export class VehiclesService {
   }
 
   private async ensureLicensePlateAvailable(licensePlate: string) {
-    const exists = await this.vehiclesRepository.existsBy({ licensePlate });
+    const exists = await this.vehiclesRepository.existsBy({ dominio: licensePlate });
 
     if (exists) {
       throw new UnprocessableEntityException({
@@ -264,7 +186,7 @@ export class VehiclesService {
     if (!owner) {
       throw new UnprocessableEntityException({
         errors: [
-          `No existe un titular para el CUIT ${cuit}. Crealo y reintenta la operacion.`,
+          `No existe un sujeto para el CUIT ${cuit}. Crealo y reintenta la operacion.`,
         ],
       });
     }
@@ -273,15 +195,15 @@ export class VehiclesService {
   }
   private toResponse(entity: VehicleEntity): VehicleResponseDto {
     return {
-      licensePlate: entity.licensePlate,
-      chassis: entity.chassis,
-      engine: entity.engine,
+      dominio: entity.dominio,
+      chasis: entity.chasis,
+      motor: entity.motor,
       color: entity.color,
-      manufactureDate: entity.manufactureDate,
-      owner: entity.owner
+      fechaFabricacion: entity.fechaFabricacion,
+      titular: entity.titular
         ? {
-            cuit: entity.owner.cuit,
-            name: entity.owner.name,
+            cuit: entity.titular.cuit,
+            nombre: entity.titular.nombre,
           }
         : (null as any),
     };

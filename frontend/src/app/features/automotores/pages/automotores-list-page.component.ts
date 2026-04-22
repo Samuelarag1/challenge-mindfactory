@@ -38,7 +38,7 @@ const DEFAULT_META: VehiclesListMeta = {
   total: 0,
   totalPages: 0,
   search: null,
-  sortBy: 'licensePlate',
+  sortBy: 'dominio',
   sortDirection: 'asc',
 };
 
@@ -112,16 +112,16 @@ function formatManufactureDateLabel(value: string): string {
           <div class="filters" role="search" aria-label="Buscar automotores">
             <div class="filter-copy">
               <p id="search-help" class="filter-support">
-                Puedes buscar por dominio o por CUIT exacto del titular.
+                Puedes buscar por dominio, CUIT o nombre del titular.
               </p>
 
               <mat-form-field appearance="outline" class="full-width filter-field">
-                <mat-label>Buscar por dominio o CUIT</mat-label>
+                <mat-label>Buscar por dominio, CUIT o titular</mat-label>
                 <input
                   matInput
                   type="search"
                   [formControl]="searchControl"
-                  placeholder="Ej. AAA123 o 20123456786"
+                  placeholder="Ej. AAA123, 20123456786 o Juan Perez"
                   spellcheck="false"
                   autocomplete="off"
                   aria-describedby="search-help"
@@ -364,16 +364,22 @@ export class VehiclesListPageComponent {
   private readonly vehiclesService = inject(VehiclesService);
   private readonly apiErrorService = inject(ApiErrorService);
   private readonly confirmationService = inject(ConfirmationService);
+  // permite limpiar subs
   private readonly destroyRef = inject(DestroyRef);
+  // nav entre rutas
   private readonly router = inject(Router);
+  //notis
   private readonly snackBar = inject(MatSnackBar);
+  //new Subject es string de datos reactivo en la consulta 
   private readonly queryChanges = new Subject<VehiclesQuery>();
 
   readonly searchControl = new FormControl('', { nonNullable: true });
+  // signal me permite manejar un estado reactivo dentro del componente. 
   readonly items = signal<Vehicle[]>([]);
   readonly meta = signal<VehiclesListMeta>(DEFAULT_META);
   readonly loading = signal(false);
   readonly errorMessages = signal<string[]>([]);
+  // computed me permite recalcular automaticamente que deriva de otros estados cuando cambian. 
   readonly tableItems = computed<VehicleTableItem[]>(() =>
     this.items().map((vehicle) => ({
       ...vehicle,
@@ -409,7 +415,7 @@ export class VehiclesListPageComponent {
     const search = this.meta().search?.trim();
 
     if (search) {
-      return `No encontramos resultados para "${search}". Revisa el dominio o el CUIT e intenta de nuevo.`;
+      return `No encontramos resultados para "${search}". Revisa el dominio, el CUIT o el nombre del titular e intenta de nuevo.`;
     }
 
     return 'Cuando registres el primer automotor, aparecera en este listado.';
@@ -428,7 +434,7 @@ export class VehiclesListPageComponent {
   constructor() {
     this.queryChanges
       .pipe(
-        takeUntilDestroyed(this.destroyRef),
+        takeUntilDestroyed(this.destroyRef), // se suscribe a un observable y se cierra cuando el componente se destruye para cuidar recursos 
         tap(() => {
           this.loading.set(true);
           this.errorMessages.set([]);
@@ -528,11 +534,11 @@ export class VehiclesListPageComponent {
   onSortChange(event: Sort): void {
     const nextDirection = event.direction === 'desc' ? 'desc' : 'asc';
     const nextSortBy =
-      event.active === 'ownerCuit' ||
-      event.active === 'ownerName' ||
-      event.active === 'manufactureDate'
+      event.active === 'titularCuit' ||
+      event.active === 'titularNombre' ||
+      event.active === 'fechaFabricacion'
         ? event.active
-        : 'licensePlate';
+        : 'dominio';
 
     this.query = {
       ...this.query,

@@ -1,0 +1,67 @@
+<h2 mat-dialog-title>Crear titular</h2>
+
+<mat-dialog-content>
+  <p id="create-owner-help" class="dialog-copy">
+    No existe un titular cargado para este CUIT. Si corresponde, puedes darlo de alta ahora y
+    seguir con el formulario.
+  </p>
+
+  @if (errors().length > 0) {
+    <mat-card
+      #errorSummary
+      appearance="outlined"
+      class="error-card"
+      tabindex="-1"
+      role="alert"
+      aria-live="assertive"
+    >
+      <mat-card-content>
+        <ul>
+          @for (error of errors(); track error) {
+            <li>{{ error }}</li>
+          }
+        </ul>
+      </mat-card-content>
+    </mat-card>
+  }
+
+  <form class="dialog-form" [formGroup]="form" (ngSubmit)="save()">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>CUIT</mat-label>
+      <input matInput formControlName="cuit" readonly aria-readonly="true" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Nombre del titular</mat-label>
+      <input
+        #nameInput
+        matInput
+        formControlName="name"
+        maxlength="120"
+        placeholder="Ej. Juan Perez"
+        autocomplete="name"
+      />
+      <mat-hint>Usa el nombre tal como deberia verse en el listado.</mat-hint>
+      @if (form.controls.name.hasError('required') && form.controls.name.touched) {
+        <mat-error>El nombre es obligatorio.</mat-error>
+      }
+      @if (
+        (form.controls.name.hasError('minlength') || form.controls.name.hasError('maxlength')) &&
+        form.controls.name.touched
+      ) {
+        <mat-error>El nombre debe tener entre 3 y 120 caracteres.</mat-error>
+      }
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close [disabled]="saving()">Cancelar</button>
+  <button mat-flat-button color="primary" type="button" (click)="save()" [disabled]="saving()">
+    @if (saving()) {
+      <mat-spinner diameter="18" />
+    } @else {
+      <span>Crear titular</span>
+    }
+  </button>
+</mat-dialog-actions>

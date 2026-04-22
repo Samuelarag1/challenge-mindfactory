@@ -16,7 +16,7 @@ import { ListVehiclesQueryDto } from './dto/list-automotores-query.dto';
 import { UpdateVehicleDto } from './dto/update-automotor.dto';
 import { VehiclesService } from './automotores.service';
 
-@Controller('vehicles')
+@Controller(['automotores', 'vehicles'])
 export class VehiclesController {
   constructor(private readonly vehiclesService: VehiclesService) {}
 
@@ -25,9 +25,9 @@ export class VehiclesController {
     return this.vehiclesService.findAll(query);
   }
 
-  @Get(':licensePlate')
+  @Get(':dominio')
   findOne(@Param() params: VehicleLicensePlateParamDto) {
-    return this.vehiclesService.findOneByLicensePlate(params.licensePlate);
+    return this.vehiclesService.findOneByLicensePlate(params.dominio);
   }
 
   @Post()
@@ -35,17 +35,17 @@ export class VehiclesController {
     return this.vehiclesService.create(payload);
   }
 
-  @Put(':licensePlate')
+  @Put(':dominio')
   update(
     @Param() params: VehicleLicensePlateParamDto,
     @Body() payload: UpdateVehicleDto,
   ) {
-    return this.vehiclesService.update(params.licensePlate, payload);
+    return this.vehiclesService.update(params.dominio, payload);
   }
 
-  @Delete(':licensePlate')
+  @Delete(':dominio')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param() params: VehicleLicensePlateParamDto) {
-    await this.vehiclesService.remove(params.licensePlate);
+    await this.vehiclesService.remove(params.dominio);
   }
 }

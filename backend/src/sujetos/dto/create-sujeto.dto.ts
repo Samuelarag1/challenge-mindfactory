@@ -18,5 +18,5 @@ export class CreateOwnerDto {
   @IsString()
   @MinLength(3)
   @MaxLength(120)
-  name!: string;
+  nombre!: string;
 }

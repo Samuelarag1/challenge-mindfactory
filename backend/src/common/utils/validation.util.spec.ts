@@ -5,9 +5,9 @@ import { normalizeText } from './text.util';
 
 function getFutureManufactureDate() {
   const date = new Date();
-  date.setUTCDate(date.getUTCDate() + 1);
+  date.setUTCMonth(date.getUTCMonth() + 1);
 
-  return date.toISOString().slice(0, 10);
+  return `${date.getUTCFullYear()}${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
 }
 
 describe('validation utils', () => {
@@ -29,13 +29,13 @@ describe('validation utils', () => {
     expect(isValidCuit('20-12345678-0')).toBe(false);
   });
 
-  it('accepts only valid ISO dates for manufactureDate', () => {
-    expect(normalizeManufactureDate(' 2020-01-15 ')).toBe('2020-01-15');
-    expect(isValidManufactureDate('2020-01-15')).toBe(true);
-    expect(isValidManufactureDate('2020/01/15')).toBe(false);
-    expect(isValidManufactureDate('20a0-01-15')).toBe(false);
-    expect(isValidManufactureDate('2020-13-01')).toBe(false);
-    expect(isValidManufactureDate('2020-02-31')).toBe(false);
+  it('accepts only valid YYYYMM values for manufactureDate', () => {
+    expect(normalizeManufactureDate(' 202001 ')).toBe('202001');
+    expect(isValidManufactureDate('202001')).toBe(true);
+    expect(isValidManufactureDate('2020/01')).toBe(false);
+    expect(isValidManufactureDate('20a001')).toBe(false);
+    expect(isValidManufactureDate('202013')).toBe(false);
+    expect(isValidManufactureDate('202000')).toBe(false);
     expect(isValidManufactureDate(getFutureManufactureDate())).toBe(false);
   });
 

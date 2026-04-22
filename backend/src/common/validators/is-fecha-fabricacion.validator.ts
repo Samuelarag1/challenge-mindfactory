@@ -17,7 +17,7 @@ export function IsManufactureDate(validationOptions?: ValidationOptions) {
           return typeof value === 'string' && isValidManufactureDate(value);
         },
         defaultMessage(args: ValidationArguments) {
-          return `${args.property} debe ser una fecha ISO valida y no puede ser futura.`;
+          return `${args.property} debe tener formato YYYYMM, un mes valido y no puede ser futura.`;
         },
       },
     });

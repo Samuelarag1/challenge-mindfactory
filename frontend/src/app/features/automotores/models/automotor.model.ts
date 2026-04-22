@@ -2,10 +2,10 @@ import { PaginatedMeta } from '../../../shared/models/pagination.model';
 import { Owner } from '../../sujetos/models/sujeto.model';
 
 export type VehicleSortField =
-  | 'licensePlate'
-  | 'ownerCuit'
-  | 'ownerName'
-  | 'manufactureDate';
+  | 'dominio'
+  | 'titularCuit'
+  | 'titularNombre'
+  | 'fechaFabricacion';
 export type SortDirection = 'asc' | 'desc';
 
 export interface Vehicle {

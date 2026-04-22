@@ -10,7 +10,7 @@ import { OwnerEntity } from './entities/sujeto.entity';
 
 type OwnerResponse = {
   cuit: string;
-  name: string;
+  nombre: string;
 };
 
 @Injectable()
@@ -24,7 +24,7 @@ export class OwnersService {
     const owner = await this.ownersRepository.findOneBy({ cuit });
 
     if (!owner) {
-      throw new NotFoundException(`No existe un titular con CUIT ${cuit}.`);
+      throw new NotFoundException(`No existe un sujeto con CUIT ${cuit}.`);
     }
 
     return this.toResponse(owner);
@@ -37,13 +37,13 @@ export class OwnersService {
 
     if (exists) {
       throw new UnprocessableEntityException({
-        errors: [`Ya existe un titular con CUIT ${payload.cuit}.`],
+        errors: [`Ya existe un sujeto con CUIT ${payload.cuit}.`],
       });
     }
 
     const owner = this.ownersRepository.create({
       cuit: payload.cuit,
-      name: payload.name,
+      nombre: payload.nombre,
     });
 
     await this.ownersRepository.save(owner);
@@ -54,7 +54,7 @@ export class OwnersService {
   private toResponse(entity: OwnerEntity): OwnerResponse {
     return {
       cuit: entity.cuit,
-      name: entity.name,
+      nombre: entity.nombre,
     };
   }
 }

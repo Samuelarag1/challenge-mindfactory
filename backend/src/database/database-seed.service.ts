@@ -6,178 +6,178 @@ import { OwnerEntity } from '../sujetos/entities/sujeto.entity';
 
 type SeedOwnerBlueprint = {
   prefix10: string;
-  name: string;
+  nombre: string;
 };
 
 type SeedVehicleBlueprint = {
-  licensePlate: string;
+  dominio: string;
   color: string;
-  manufactureDate: string;
+  fechaFabricacion: string;
   ownerIndex: number;
 };
 
 const SEED_OWNER_BLUEPRINTS: SeedOwnerBlueprint[] = [
-  { prefix10: '2012345678', name: 'Juan Perez' },
-  { prefix10: '2723456789', name: 'Maria Gomez' },
-  { prefix10: '3071234567', name: 'Transporte Delta SA' },
-  { prefix10: '2033344455', name: 'Lucia Fernandez' },
-  { prefix10: '2722233344', name: 'Carla Ruiz' },
-  { prefix10: '3077788899', name: 'Logistica Pampeana SRL' },
-  { prefix10: '2098765432', name: 'Diego Martinez' },
-  { prefix10: '2711122233', name: 'Valeria Sosa' },
-  { prefix10: '3055511122', name: 'Agroinsumos del Sur SA' },
-  { prefix10: '2030314159', name: 'Martin Lopez' },
+  { prefix10: '2012345678', nombre: 'Juan Perez' },
+  { prefix10: '2723456789', nombre: 'Maria Gomez' },
+  { prefix10: '3071234567', nombre: 'Transporte Delta SA' },
+  { prefix10: '2033344455', nombre: 'Lucia Fernandez' },
+  { prefix10: '2722233344', nombre: 'Carla Ruiz' },
+  { prefix10: '3077788899', nombre: 'Logistica Pampeana SRL' },
+  { prefix10: '2098765432', nombre: 'Diego Martinez' },
+  { prefix10: '2711122233', nombre: 'Valeria Sosa' },
+  { prefix10: '3055511122', nombre: 'Agroinsumos del Sur SA' },
+  { prefix10: '2030314159', nombre: 'Martin Lopez' },
 ];
 
 const SEED_VEHICLE_BLUEPRINTS: SeedVehicleBlueprint[] = [
   {
-    licensePlate: 'AAA123',
+    dominio: 'AAA123',
     color: 'Blanco',
-    manufactureDate: '2018-06-01',
+    fechaFabricacion: '201806',
     ownerIndex: 0,
   },
   {
-    licensePlate: 'AB123CD',
+    dominio: 'AB123CD',
     color: 'Negro',
-    manufactureDate: '2021-12-01',
+    fechaFabricacion: '202112',
     ownerIndex: 1,
   },
   {
-    licensePlate: 'AC456EF',
+    dominio: 'AC456EF',
     color: 'Gris',
-    manufactureDate: '2020-01-01',
+    fechaFabricacion: '202001',
     ownerIndex: 2,
   },
   {
-    licensePlate: 'AAD456',
+    dominio: 'AAD456',
     color: 'Rojo',
-    manufactureDate: '2019-04-01',
+    fechaFabricacion: '201904',
     ownerIndex: 3,
   },
   {
-    licensePlate: 'AAE567',
+    dominio: 'AAE567',
     color: 'Azul',
-    manufactureDate: '2017-11-01',
+    fechaFabricacion: '201711',
     ownerIndex: 4,
   },
   {
-    licensePlate: 'AAF678',
+    dominio: 'AAF678',
     color: 'Plata',
-    manufactureDate: '2022-05-01',
+    fechaFabricacion: '202205',
     ownerIndex: 5,
   },
   {
-    licensePlate: 'AAG789',
+    dominio: 'AAG789',
     color: 'Blanco',
-    manufactureDate: '2016-12-01',
+    fechaFabricacion: '201612',
     ownerIndex: 6,
   },
   {
-    licensePlate: 'AAH890',
+    dominio: 'AAH890',
     color: 'Verde',
-    manufactureDate: '2015-10-01',
+    fechaFabricacion: '201510',
     ownerIndex: 7,
   },
   {
-    licensePlate: 'AA123AA',
+    dominio: 'AA123AA',
     color: 'Bordo',
-    manufactureDate: '2023-03-01',
+    fechaFabricacion: '202303',
     ownerIndex: 8,
   },
   {
-    licensePlate: 'AB234BC',
+    dominio: 'AB234BC',
     color: 'Negro',
-    manufactureDate: '2022-10-01',
+    fechaFabricacion: '202210',
     ownerIndex: 9,
   },
   {
-    licensePlate: 'AC345CD',
+    dominio: 'AC345CD',
     color: 'Azul',
-    manufactureDate: '2018-08-01',
+    fechaFabricacion: '201808',
     ownerIndex: 0,
   },
   {
-    licensePlate: 'AD456DE',
+    dominio: 'AD456DE',
     color: 'Gris',
-    manufactureDate: '2021-09-01',
+    fechaFabricacion: '202109',
     ownerIndex: 1,
   },
   {
-    licensePlate: 'AE567EF',
+    dominio: 'AE567EF',
     color: 'Blanco',
-    manufactureDate: '2017-06-01',
+    fechaFabricacion: '201706',
     ownerIndex: 2,
   },
   {
-    licensePlate: 'AF678FG',
+    dominio: 'AF678FG',
     color: 'Rojo',
-    manufactureDate: '2019-12-01',
+    fechaFabricacion: '201912',
     ownerIndex: 3,
   },
   {
-    licensePlate: 'AG789GH',
+    dominio: 'AG789GH',
     color: 'Champagne',
-    manufactureDate: '2024-06-01',
+    fechaFabricacion: '202406',
     ownerIndex: 4,
   },
   {
-    licensePlate: 'AH890HJ',
+    dominio: 'AH890HJ',
     color: 'Azul Marino',
-    manufactureDate: '2016-03-01',
+    fechaFabricacion: '201603',
     ownerIndex: 5,
   },
   {
-    licensePlate: 'AK901KL',
+    dominio: 'AK901KL',
     color: 'Negro',
-    manufactureDate: '2020-11-01',
+    fechaFabricacion: '202011',
     ownerIndex: 6,
   },
   {
-    licensePlate: 'AL012LM',
+    dominio: 'AL012LM',
     color: 'Gris Plata',
-    manufactureDate: '2023-07-01',
+    fechaFabricacion: '202307',
     ownerIndex: 7,
   },
   {
-    licensePlate: 'AM123MN',
+    dominio: 'AM123MN',
     color: 'Rojo',
-    manufactureDate: '2015-02-01',
+    fechaFabricacion: '201502',
     ownerIndex: 8,
   },
   {
-    licensePlate: 'AN234NP',
+    dominio: 'AN234NP',
     color: 'Blanco Perla',
-    manufactureDate: '2014-09-01',
+    fechaFabricacion: '201409',
     ownerIndex: 9,
   },
   {
-    licensePlate: 'AO345PQ',
+    dominio: 'AO345PQ',
     color: 'Verde Oliva',
-    manufactureDate: '2019-08-01',
+    fechaFabricacion: '201908',
     ownerIndex: 0,
   },
   {
-    licensePlate: 'AP456QR',
+    dominio: 'AP456QR',
     color: 'Azul',
-    manufactureDate: '2021-04-01',
+    fechaFabricacion: '202104',
     ownerIndex: 1,
   },
   {
-    licensePlate: 'AQ567RS',
+    dominio: 'AQ567RS',
     color: 'Negro',
-    manufactureDate: '2022-12-01',
+    fechaFabricacion: '202212',
     ownerIndex: 2,
   },
   {
-    licensePlate: 'AR678ST',
+    dominio: 'AR678ST',
     color: 'Plata',
-    manufactureDate: '2017-12-01',
+    fechaFabricacion: '201712',
     ownerIndex: 3,
   },
   {
-    licensePlate: 'AS789TU',
+    dominio: 'AS789TU',
     color: 'Rojo',
-    manufactureDate: '2020-02-01',
+    fechaFabricacion: '202002',
     ownerIndex: 4,
   },
 ];
@@ -209,7 +209,7 @@ export class DatabaseSeedService implements OnApplicationBootstrap {
   private async seedOwners() {
     const owners = SEED_OWNER_BLUEPRINTS.map((ownerBlueprint) => ({
       cuit: this.buildCuit(ownerBlueprint.prefix10),
-      name: ownerBlueprint.name,
+      nombre: ownerBlueprint.nombre,
     }));
 
     await this.ownersRepository.upsert(owners, ['cuit']);
@@ -222,15 +222,15 @@ export class DatabaseSeedService implements OnApplicationBootstrap {
       this.buildCuit(ownerBlueprint.prefix10),
     );
     const vehicles = SEED_VEHICLE_BLUEPRINTS.map((vehicleBlueprint, index) => ({
-      licensePlate: vehicleBlueprint.licensePlate,
-      chassis: this.buildChassis(index + 1),
-      engine: this.buildEngine(index + 1),
+      dominio: vehicleBlueprint.dominio,
+      chasis: this.buildChassis(index + 1),
+      motor: this.buildEngine(index + 1),
       color: vehicleBlueprint.color,
-      manufactureDate: vehicleBlueprint.manufactureDate,
-      ownerCuit: ownerCuits[vehicleBlueprint.ownerIndex],
+      fechaFabricacion: vehicleBlueprint.fechaFabricacion,
+      titularCuit: ownerCuits[vehicleBlueprint.ownerIndex],
     }));
 
-    await this.vehiclesRepository.upsert(vehicles, ['licensePlate']);
+    await this.vehiclesRepository.upsert(vehicles, ['dominio']);
 
     this.logger.log(`Initial vehicle seed applied: ${vehicles.length} records.`);
   }

@@ -8,26 +8,37 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { OwnerEntity } from '../../sujetos/entities/sujeto.entity';
+import {
+  manufactureDateFromDatabase,
+  manufactureDateToDatabase,
+} from '../../common/utils/fecha-fabricacion.util';
 
 @Entity({ name: 'automotores' })
 export class VehicleEntity {
   @PrimaryColumn({ name: 'dominio', type: 'varchar', length: 7 })
-  licensePlate!: string;
+  dominio!: string;
 
   @Column({ name: 'chasis', type: 'varchar', length: 30 })
-  chassis!: string;
+  chasis!: string;
 
   @Column({ name: 'motor', type: 'varchar', length: 30 })
-  engine!: string;
+  motor!: string;
 
   @Column({ name: 'color', type: 'varchar', length: 40 })
   color!: string;
 
-  @Column({ name: 'fecha_fabricacion', type: 'date' })
-  manufactureDate!: string;
+  @Column({
+    name: 'fecha_fabricacion',
+    type: 'date',
+    transformer: {
+      to: (value: string) => manufactureDateToDatabase(value),
+      from: (value: string) => manufactureDateFromDatabase(value),
+    },
+  })
+  fechaFabricacion!: string;
 
   @Column({ name: 'titular_cuit', type: 'varchar', length: 11 })
-  ownerCuit!: string;
+  titularCuit!: string;
 
   @ManyToOne(() => OwnerEntity, (owner) => owner.vehicles, {
     nullable: false,
@@ -35,7 +46,7 @@ export class VehicleEntity {
     onUpdate: 'CASCADE',
   })
   @JoinColumn({ name: 'titular_cuit', referencedColumnName: 'cuit' })
-  owner!: OwnerEntity;
+  titular!: OwnerEntity;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;

@@ -14,9 +14,9 @@ export class OwnerEntity {
   cuit!: string;
 
   @Column({ name: 'nombre', type: 'varchar', length: 120 })
-  name!: string;
+  nombre!: string;
 
-  @OneToMany(() => VehicleEntity, (vehicle) => vehicle.owner)
+  @OneToMany(() => VehicleEntity, (vehicle) => vehicle.titular)
   vehicles!: VehicleEntity[];
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })

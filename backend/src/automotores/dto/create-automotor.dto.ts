@@ -14,7 +14,7 @@ export class CreateVehicleDto {
   )
   @IsNotEmpty()
   @IsLicensePlate()
-  licensePlate!: string;
+  dominio!: string;
 
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? normalizeText(value) : value,
@@ -22,7 +22,7 @@ export class CreateVehicleDto {
   @IsString()
   @MinLength(3)
   @MaxLength(30)
-  chassis!: string;
+  chasis!: string;
 
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? normalizeText(value) : value,
@@ -30,7 +30,7 @@ export class CreateVehicleDto {
   @IsString()
   @MinLength(3)
   @MaxLength(30)
-  engine!: string;
+  motor!: string;
 
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? normalizeText(value) : value,
@@ -45,12 +45,12 @@ export class CreateVehicleDto {
   )
   @IsNotEmpty()
   @IsManufactureDate()
-  manufactureDate!: string;
+  fechaFabricacion!: string;
 
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? normalizeCuit(value) : value,
   )
   @IsNotEmpty()
   @IsCuit()
-  ownerCuit!: string;
+  titularCuit!: string;
 }

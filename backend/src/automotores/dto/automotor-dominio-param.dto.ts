@@ -9,5 +9,5 @@ export class VehicleLicensePlateParamDto {
   )
   @IsNotEmpty()
   @IsLicensePlate()
-  licensePlate!: string;
+  dominio!: string;
 }

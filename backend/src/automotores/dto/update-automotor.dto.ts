@@ -13,7 +13,7 @@ export class UpdateVehicleDto {
   @IsString()
   @MinLength(3)
   @MaxLength(30)
-  chassis!: string;
+  chasis!: string;
 
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? normalizeText(value) : value,
@@ -21,7 +21,7 @@ export class UpdateVehicleDto {
   @IsString()
   @MinLength(3)
   @MaxLength(30)
-  engine!: string;
+  motor!: string;
 
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? normalizeText(value) : value,
@@ -35,11 +35,11 @@ export class UpdateVehicleDto {
     typeof value === 'string' ? normalizeManufactureDate(value) : value,
   )
   @IsManufactureDate()
-  manufactureDate!: string;
+  fechaFabricacion!: string;
 
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? normalizeCuit(value) : value,
   )
   @IsCuit()
-  ownerCuit!: string;
+  titularCuit!: string;
 }

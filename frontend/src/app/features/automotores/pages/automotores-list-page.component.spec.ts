@@ -32,7 +32,7 @@ describe('VehiclesListPageComponent', () => {
             total: 1,
             totalPages: 1,
             search: null,
-            sortBy: 'licensePlate',
+            sortBy: 'dominio',
             sortDirection: 'asc',
           },
         }),
@@ -77,7 +77,7 @@ describe('VehiclesListPageComponent', () => {
             total: 0,
             totalPages: 0,
             search: null,
-            sortBy: 'licensePlate',
+            sortBy: 'dominio',
             sortDirection: 'asc',
           },
         }),
@@ -103,12 +103,12 @@ describe('VehiclesListPageComponent', () => {
     const fixture = TestBed.createComponent(VehiclesListPageComponent);
     const component = fixture.componentInstance;
 
-    component.onSortChange({ active: 'ownerName', direction: 'desc' });
+    component.onSortChange({ active: 'titularNombre', direction: 'desc' });
 
     expect(vehiclesService.list).toHaveBeenLastCalledWith({
       page: 1,
       limit: 10,
-      sortBy: 'ownerName',
+      sortBy: 'titularNombre',
       sortDirection: 'desc',
     });
   });

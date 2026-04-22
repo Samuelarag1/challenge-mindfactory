@@ -2,14 +2,15 @@ import { Transform } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import { normalizeCuit } from '../../common/utils/cuit.util';
 import { normalizeLicensePlate } from '../../common/utils/dominio.util';
+import { normalizeText } from '../../common/utils/text.util';
 
 export const VEHICLE_SORT_FIELDS = [
-  'licensePlate',
-  'chassis',
+  'dominio',
+  'chasis',
   'color',
-  'manufactureDate',
-  'ownerCuit',
-  'ownerName',
+  'fechaFabricacion',
+  'titularCuit',
+  'titularNombre',
 ] as const;
 
 export type VehicleSortField = (typeof VEHICLE_SORT_FIELDS)[number];
@@ -52,13 +53,13 @@ export class ListVehiclesQueryDto {
 
   @Transform(({ value }) => {
     if (value === undefined) {
-      return 'licensePlate';
+      return 'dominio';
     }
 
     return String(value);
   })
   @IsIn(VEHICLE_SORT_FIELDS)
-  sortBy: VehicleSortField = 'licensePlate';
+  sortBy: VehicleSortField = 'dominio';
 
   @Transform(({ value }) => {
     if (value === undefined) {
@@ -84,5 +85,13 @@ export class ListVehiclesQueryDto {
     }
 
     return normalizeCuit(this.search);
+  }
+
+  get normalizedOwnerNameSearch() {
+    if (!this.search) {
+      return '';
+    }
+
+    return normalizeText(this.search);
   }
 }

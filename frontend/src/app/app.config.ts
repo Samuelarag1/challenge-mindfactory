@@ -7,10 +7,10 @@ import { routes } from './app.routes';
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideBrowserGlobalErrorListeners(),
-    provideHttpClient(),
-    provideRouter(routes),
-    {
+    provideBrowserGlobalErrorListeners(), //listener global de errores
+    provideHttpClient(), // habilita cliente http para obtener llamadas
+    provideRouter(routes), //  permite configurar rutas de la aplicacion
+    { // necesario para la paginacion
       provide: MatPaginatorIntl,
       useFactory: buildPaginatorIntl,
     },

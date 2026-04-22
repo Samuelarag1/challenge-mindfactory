@@ -3,7 +3,7 @@ import { CreateOwnerDto } from './dto/create-sujeto.dto';
 import { FindOwnerByCuitQueryDto } from './dto/find-sujeto-by-cuit-query.dto';
 import { OwnersService } from './sujetos.service';
 
-@Controller('owners')
+@Controller(['sujetos', 'owners'])
 export class OwnersController {
   constructor(private readonly ownersService: OwnersService) {}
 
